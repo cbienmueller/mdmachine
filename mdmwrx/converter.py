@@ -94,7 +94,7 @@ def call_my_docker(cd):
         mount_medien,
         mount_tmp, 
         '--user', f'{uid}:{gid}', 
-        'pandoc/core:3.7-ubuntu',          #  war 'biec/pandocker',                               # mein docker image
+        'pandoc/core:3.7-ubuntu',          # war 'biec/pandocker',                               # mein docker image
         f'{cd.tmp_filestem}_todo.sh']
 
     print("Starte Docker...")
@@ -177,7 +177,7 @@ def convert2html(cd):
         
     if cd.mymeta.force_title:
         html_todo_base += [
-        '--metadata', f'pagetitle="{cd.mymeta.title}"']     # Titel aus dem Dateinamen wenn nicht im Source-md enthalten.
+            '--metadata', f'pagetitle="{cd.mymeta.title}"']  # Titel aus dem Dateinamen wenn nicht im Source-md enthalten.
         
     html_todo_base += [    
         '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen

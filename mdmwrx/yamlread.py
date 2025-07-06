@@ -1,3 +1,11 @@
+""" Erzeugt entweder aus dem
+        optionalen YAML-Kopf einer Markdown-Datei oder aus einem reinen
+        YAML-File das entsprechende und gibt es zurück.
+        
+        Der md-Kopf muss dazu mit --- und/oder ... starten und enden.
+        Pandoc ist dabei aber kritischer: Start:--- Ende:...
+"""
+
 try:
     import yaml  # Quelle unter debian: python3-yaml, sonst pyyaml per pip
 except Exception:
@@ -6,12 +14,6 @@ except Exception:
         oder pip pyyaml.''')
     exit()
 
-""" Erzeugt entweder aus dem
-        optionalen YAML-Kopf einer Markdown-Datei oder aus einem reinen
-        YAML-File das entsprechende und gibt es zurück.
-        
-        Der md-Kopf muss dazu mit --- und/oder ___ starten und enden.
-"""
 
 def get_yaml_dict_from_md(mdfile):
     """ Liest aus der md-Datei den YAML-Bereich und konvertiert ihn zu einem dict.

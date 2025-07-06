@@ -99,13 +99,13 @@ SIDEBAR_barebone = FILE_barebone + """
 """
 
 SIDEBAR_sectionstart = '\t<h4>{}</h4>\n\t<ul {} style="list-style-type: none;">\n'
-SIDEBAR_extern = '\t\t<li>        <a href="{}" title="{}" target="_blank">{} </a></li>\n'
-SIDEBAR_li_bb = ['\t\t<li class="{}"><span><em>                     <a href="{}" id="{}" title="{}" target="_parent">{}</a>'
-                                                                '    </em></span><span>{}</span></li>\n',
-                 '\t\t<li class="{}"><span>        <a href="{}" id="{}" title="{}" target="_parent">{}</a>'
-                                                                '         </span><span>{}</span></li>\n',
-                 '\t\t<li class="{}"><span><strong><a href="{}" id="{}" title="{}" target="_parent">{}</a>'
-                                                                '</strong></span><span>{}</span></li>\n']
+SIDEBAR_extern = '''\t\t<li>        <a href="{}" title="{}" target="_blank">{} </a></li>\n'''
+SIDEBAR_li_bb = ['''\t\t<li class="{}"><span><em>                     <a href="{}" id="{}" title="{}" target="_parent">{}</a>
+                                                                      </em></span><span>{}</span></li>\n''',
+                 '''\t\t<li class="{}"><span>        <a href="{}" id="{}" title="{}" target="_parent">{}</a>
+                                                                          </span><span>{}</span></li>\n''',
+                 '''\t\t<li class="{}"><span><strong><a href="{}" id="{}" title="{}" target="_parent">{}</a>
+                                                                  </strong></span><span>{}</span></li>\n''']
 # SIDEBAR_pdf = ' &nbsp; <a href="{}" title="PDF-Version" target="_blank"><small>&#128462;</small></a>'
 SIDEBAR_pdf = ' &nbsp; <a href="{}" title="PDF-Version" target="_blank"><img class="pdficon" /></a>'
 SIDEBAR_slides = ' &nbsp; <a href="{}" title="PDF-SLIDES Format {}" target="_blank"><img class="slidesicon" /></a>'
@@ -170,9 +170,9 @@ def make_sitemap(path):
     with open(sm_path, 'w') as f:
         # ## Dateistart
         content, lang = get_folderinfo4sitemap(path, "", timeline_list)  
-                        # wird rekursiv für jedes Unterverzeichnis aufgerufen
-                        # lang kommt nur vom root-dir_info.yaml
-                        # timeline_list nimmt Datum und Beschreibungstext auf
+        # wird rekursiv für jedes Unterverzeichnis aufgerufen
+        # lang kommt nur vom root-dir_info.yaml
+        # timeline_list nimmt Datum und Beschreibungstext auf
         f.write(SIDEBAR_barebone.format(lang, 'Sitemap'))
         f.write(content)
         f.write(SIDEBAR_fine)
@@ -200,10 +200,10 @@ def get_side_navi(aktpath):
     timeline_list_dummy = [("2024-01-01", "dummy")]
     lang = "de"
     content, lang = get_folderinfo4sitemap(startpath, ri.updir_string, timeline_list_dummy, aktpath)
-                        # wird rekursiv für jedes Unterverzeichnis aufgerufen
-                        # lang kommt nur vom root-dir_info.yaml
-                        # timeline_list nimmt Datum und Beschreibungstext auf
-                        # Enthält nur im aktpath die Dateien
+    # wird rekursiv für jedes Unterverzeichnis aufgerufen
+    # lang kommt nur vom root-dir_info.yaml
+    # timeline_list nimmt Datum und Beschreibungstext auf
+    # Enthält nur im aktpath die Dateien
     return content, lang
         
         
@@ -252,7 +252,6 @@ def get_folderinfo4sitemap(mypath, relpath, timeline_list, filespath=""):
 
 def make_sidebar(path, do_recursive=False, talk=""):
     ausgabe = path / 'sidebar.html'
-    p_anzahl = 0
     
     ri = get_root_info(path)
     navi_content, lang = get_side_navi(path)
@@ -566,7 +565,7 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
            not htmlfile.stem.startswith("_mdm") and \
            not htmlfile.stem.endswith("_SLIDES") and \
            not htmlfile.stem.endswith("_slides") and \
-           not '_SLIDES_' in htmlfile.stem and \
+           '_SLIDES_' not in htmlfile.stem and \
            (all_files or htmlfile.name == index_filename):
                
             # yey, wir haben eine html-Datei gefunden. Sammle dies als Link, mit Title, Priorität und ggf. PDF-File
@@ -589,11 +588,12 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
             
             li_list[prio].append((title, 
                                   SIDEBAR_li_bb[prio].format(liclass,
-                                      relpath + htmlfile.name,
-                                      title.replace(" ", "-"), 
-                                      "", 
-                                      title, 
-                                      pdffileentry + slidesfileentry))) 
+                                                             relpath + htmlfile.name,
+                                                             title.replace(" ", "-"), 
+                                                             "", 
+                                                             title, 
+                                                             pdffileentry + slidesfileentry)
+                                  )) 
             # ein tupel mit (sortierkriterium,inhalt)
             
             # Cool, nun schauen wir, ob weitere Infos aus der .md-Datei gebraucht werden:
