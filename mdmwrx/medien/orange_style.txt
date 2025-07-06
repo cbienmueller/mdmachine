@@ -1,0 +1,7 @@
+
+<!-- orange_style.txt -->
+<style>
+    :root {
+        --my-hue: 36;
+    }
+</style>

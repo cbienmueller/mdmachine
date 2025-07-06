@@ -1,0 +1,176 @@
+
+<!-- my_css_slides.txt -->
+<style>
+    /* ********************************************** *
+     * Stile, die Präsentationsslides in PDF erzeugen *
+     * ********************************************** */
+    /*  2024-09-14  - Seitenverhältnis näher an altes iPAd gebracht da für Beamer wichtiger...
+        2024-02-22  - Seitenverhältnis an neues iPad angenähert
+        2024-02-19  - Schrift etwas verkleinert, Absatzabstände verbessert (<p> großer, <ul> kleiner)
+        2024-01-27  - wide_on_slides als neuer Standard, daher entfernt
+                    - margin_on_slides stattdessen, um notes daneben anzeigen zu können
+        2024-01-07  - Zeilenabstände nur bei Slides kleiner,
+                    - Bilder in Slides kleiner, damit Caption (auch verkleinert) dazu passt,
+                    - column automatisch wide_on_slides
+                    - Links in Slides nicht ausschreiben
+                    - TOC kleiner
+        2025-04-20  - css-Namen von mdmachine systematisiert (pandoc unverändert!):
+                        m²_ am Anfang
+                        wort_trennung wie in Python
+        2025-05-03  - Seitenverhältnis systematisiert: 
+                        Feste Höhe 14,5 cm. 
+                        Standardbreite: iPad air 5th, andere via m²-slide-width = fhd | gen8 | beamer
+    */
+      
+    @page {                         /* Seite festlegen */
+        size: 20.86cm 14.5cm;         /* Für ipad air gen 5, nahe A5 quer! */
+        /* gen8 (ipad ) erlaubt nur 19.33 cm Breite */ 
+        /* beamer (Beamer mit 1280x800) ergibt 23,2 cm Breite */
+        /* fhd (FullHD) ergibt 25.77cm */
+        margin: 1px;
+        margin-left: 2px;
+    }
+    body {                          /* Zoom festlegen */
+        font-size: 0.7cm;
+        line-height: 120%;
+        width: 99vw;
+        max-width: 99vw;
+        margin: 0px;
+        padding: 0px;
+
+    }
+    p   { margin-bottom: 0.3em; } 
+    ul  { margin-bottom: 0.4em; margin-top: 0.4em; } 
+    header#title-block-header { page-break-after: always; } /* Nach dem Header, vor eigentlichem Content umbrechen */
+    
+    .m²_new_slide, h3 {                 /* beide lösen neue Seite=Slide aus */
+        page-break-before:always;
+    }
+    .m²_no_new_slide {                   /* Klasse, mit der automatische slides unterdrückt werden*/
+        page-break-before:unset;
+    }
+    h4.m²_new_slide, h5.m²_new_slide, h3:not(.m²_no_new_slide) {
+        margin-top: 4px;
+    }
+    
+    div.m²_very_large { font-size:110%; line-height: 180%; }
+    
+    img {                           /* Bilder anders handhaben */
+        max-height: 80vh;
+        max-width: 95vw;
+        height:auto;
+        width:auto;
+    }
+    .column img {
+        max-width: 48vw;
+    }
+    figcaption, [data-filename]:after {
+        font-size: 0.35cm;
+        line-height: normal;
+    }
+    .m²_margin_on_slides {
+        width:75vw;
+        max-width:75vw;
+    }
+    .m²_margin_on_slides .column img {
+        max-width: 37vw;
+    }
+
+    .m²_only_on_slides {
+        display: block;
+    }
+    span.m²_only_on_slides {
+        display:inline;
+    }
+    .m²_not_on_slides {
+        display: none;
+    }
+    
+    h2+h3, 
+    h2+p+h3,
+    h3+h3 {
+        page-break-before: unset;
+    }
+    /*Gute Kombi: note nur wenn extra-Margin*/
+    .m²_margin_on_slides .m²_note {
+        font-size: 0.45cm;
+        line-height: normal;
+        width: 24vw;
+    }
+    /* Fallback, wenn kein extra-Margin gewählt oder gewünscht  */
+    .m²_note:not(.m²_margin_on_slides .m²_note) {
+        font-size: 80%;
+        display: contents; }
+    .m²_note:not(.m²_margin_on_slides .m²_note)::before {   content: "❪";   }
+    .m²_note:not(.m²_margin_on_slides .m²_note)::after {    content: "❫";   }
+    .m²_note:not(.m²_margin_on_slides .m²_note) br {        display: none;   }  /* Zeilenumbrüche im erzwungenen Fließtext verhindern */
+    
+    #TOC {
+        font-size:70%;
+        font-stretch: 75%;
+        max-width: 33vw;
+    }
+    .abstract {
+        max-width: 66vw;   /* da neben TOC, s.o. */
+    }
+    header {
+        max-width: 65vw;
+    }
+    a[href]::after {
+        content: "";
+        font-size: 80%;
+    }
+    dt {    /* um 2.5 em weiter links als bei A4 */
+        width: 7.5em;
+    }
+    dd {    /* entsprechend die Beschreibung eingerückt für "daneben" */
+        margin-left: 8.5em;
+    }
+    code {
+        background-color: #ffb;
+        color: #009;
+    }
+    .m²_source_code {        
+        background-color: #ffb;
+    }
+    .m²_output pre code {
+        background-color: #ececec;
+    }
+    pre.mermaid {
+        max-width: 19.5cm;
+        max-height: 14cm;
+        background-color: #ffc;
+    }
+    pre.mermaid svg {
+        max-width: 19cm;
+        max-height: 13.5cm;
+    }
+    .m²_yellow_box {
+        background-color:#FFC;
+    }
+    .m²_grey_box {
+        background-color:#EEE;
+    }
+    .m²_blue_box {
+        background-color:#CCF;
+    }
+    .m²_green_box {
+        background-color:#CFC;
+    }
+    .m²_red_box {
+        background-color:#FCC;
+    }
+    #footnotes {
+        font-size: 50%;
+        line-height: 80%;
+    }
+    .m²_small_on_slides {
+        font-size:87% !important;
+        line-height:100% !important;
+        font-stretch: 85%;
+    }
+   .m²_compressed_on_slides {
+        font-stretch: 85%;
+    }
+
+</style>

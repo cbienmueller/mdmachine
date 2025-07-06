@@ -1,0 +1,18 @@
+
+<!-- my_footer.txt -->
+<div id="footer" alt="Biene als Logo" style="text-align:right;">
+    <a href="https://www.bienmueller.de" class="no_link_expansion">
+        Christian Bienmüller
+        <img class="cb-biene" />
+    </a>
+</div>
+<script>
+    /* Binde nach 0.2 Sekunden eine eventuelle sidebar ein */
+    setTimeout(
+        function() {
+                create_sidebar(); 
+            },
+        200);
+    /* Gib allen externen Links das Target "_blank", also neuen Tab */
+    document.querySelectorAll('a[href^="http"]').forEach(function(a) { a.target = "_blank"; });
+</script>

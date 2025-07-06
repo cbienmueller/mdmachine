@@ -1,0 +1,9 @@
+
+<!-- css_beamer_slides.txt -->
+<style>
+    @page {                         /* Seite festlegen */
+        size: 23.2cm 14.5cm;        /* Für Beamer 1280x800, also 16:10 */ 
+        margin-left:  0.5cm;
+        margin-right: 0.5cm;
+    }
+</style>

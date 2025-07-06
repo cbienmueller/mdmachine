@@ -1,0 +1,7 @@
+
+<!-- css_gen8_slides.txt -->
+<style>
+    @page {                         /* Seite festlegen */
+        size: 19.33cm 14.5cm;       /* Für ipad gen8 */ 
+    }
+</style>
