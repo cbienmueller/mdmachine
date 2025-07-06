@@ -1,2 +1,2 @@
 # mdmachine
-Pythonscript to automatically convert Markdown first to HTML and this to PDF
+Pythonscript for automatic conversion of Markdown first to HTML and then to PDF.
