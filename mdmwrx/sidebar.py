@@ -23,24 +23,24 @@ DEMO_DIR_INFO_YAML = """
 ##      indexfilename: xyz.html
 ##          als Alternative zur index.html
 ##
-#m²-indexfilename: demo.html
+#m²_indexfilename: demo.html
 ##
 ##      overridetitle: Demoinhalte
 ##          Eigentlich sollte der Verzeichnistitel der Datei indexfilename entnommen werden.
 ##          Dies kann hier übersteuert werden (kann inkonsistent wirken)
-#m²-overridetitle: Demoinhalte
+#m²_overridetitle: Demoinhalte
 ##
 ##      isroot: False 
 ##          Flag, ob DIESES Verzeichnis ab hier als Home / Root 
 ##          des darunterliegenden Verzeichnisbaums anzusehen ist. 
 ##          Der Linktitel wird der Datei oder ggf. obigem overridetitle entnommen.
-#m²-isroot: True
+#m²_isroot: True
 ##
 ##      subdirprio: High oder Low
 ##          Wird damit in der sidebar des übergeordneten Verzeichnisses einsortiert.
 ##          Dort werden High/normal/Low in drei Blöcken, jeweils in sich alphabetisch sortiert
 ##          angeordnet im Format Fett/normal/kursiv.
-#m²-subdirprio: Low
+#m²_subdirprio: Low
 ##      
 ##      lang: Sprachstring
 ##          welche Sprache soll als HTML lang Wert gesetzt werden.
@@ -164,7 +164,7 @@ def write_demo_dir_info_yaml(path):
 
 def make_sitemap(path):
     sm_path = path / 'sitemap.html'
-    tl_path = path / '_mdm_timeline.html'
+    tl_path = path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
     lang = "de"
     with open(sm_path, 'w') as f:
@@ -251,7 +251,7 @@ def get_folderinfo4sitemap(mypath, relpath, timeline_list, filespath=""):
 
 
 def make_sidebar(path, do_recursive=False, talk=""):
-    ausgabe = path / 'sidebar.html'
+    ausgabe = path / '_mdm_sidebar_.html'
     
     ri = get_root_info(path)
     navi_content, lang = get_side_navi(path)
@@ -281,7 +281,7 @@ def make_sidebar(path, do_recursive=False, talk=""):
 
 
 def make_sidebar_ORG(path, do_recursive=False, talk=""):
-    ausgabe = path / 'sidebar.html'
+    ausgabe = path / '_mdm_sidebar_.html'
     p_anzahl = 0
     
     with open(ausgabe, 'w') as f:
@@ -334,7 +334,7 @@ def make_sidebar_ORG(path, do_recursive=False, talk=""):
         print("┌─Sidebar-Zusammenfassung:")
         if talk:
             print("│ " + talk)
-        print(f'│ sidebar.html erstellt mit\n│ {f_anzahl: >5} eingetragenen Seiten '
+        print(f'│ _mdm_sidebar_.html erstellt mit\n│ {f_anzahl: >5} eingetragenen Seiten '
               f' sowie\n│ {s_anzahl: >5} Unterverzeichnissen {subnamen}'
               f' bzw. \n│ {p_anzahl: >5} Oberverzeichnis'
               f' und  \n│ {l_anzahl: >5} Links'
@@ -363,7 +363,7 @@ def get_title_prio_from_html(htmlfile, ersatztitel=''):
     yamldict = get_yaml_dict_from_md(htmlfile.absolute().parent / (htmlfile.stem + ".md"))
     if yamldict:
         title = yamldict.get("title")
-        prio = analyze_priostrg(yamldict.get("m²-sbpriority"))
+        prio = analyze_priostrg(yamldict.get("m²_sbpriority"))
         # print(f'yamldict for {htmlfile.name} liefert {prio}')
         
     if title:
@@ -417,7 +417,7 @@ def get_subdirs_section(path):
                 #  print("s "+subdir.name+" hat yaml")
                 subdict = get_yaml_dict_from_yaml(subdir / "dir_info.yaml")
                 if subdict:
-                    indexfilename = subdict.get("m²-indexfilename")
+                    indexfilename = subdict.get("m²_indexfilename")
                     if indexfilename:
                         indexfilename = indexfilename.replace("/", "_")
                         indexfilename = f'{subdir.name}/{indexfilename}'
@@ -475,8 +475,8 @@ def get_folder_filename_title_yaml(folder_path):
         # sby einlesen in sby_dict
         sby_dict = get_yaml_dict_from_yaml(sby)
         if sby_dict:
-            folder_filename = sby_dict.get("m²-indexfilename")
-            folder_title = sby_dict.get("m²-overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
+            folder_filename = sby_dict.get("m²_indexfilename")
+            folder_title = sby_dict.get("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
     if not folder_filename or not (folder_path / folder_filename).is_file():
         folder_filename = 'index.html'
     if not (folder_path / folder_filename).is_file():
@@ -511,7 +511,7 @@ def get_links_section_isroot(path):
     if sby.is_file():
         ydict = get_yaml_dict_from_yaml(sby)
         if ydict:
-            isroot = bool(ydict.get("m²-isroot"))
+            isroot = bool(ydict.get("m²_isroot"))
             links = ydict.get("m²-links")
             linkoutput, l_anzahl = format_yaml_links(links)
             if linkoutput:
@@ -540,7 +540,7 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
     lang = ""
     index_filename, _, ydict = get_folder_filename_title_yaml(path)
     if ydict:
-        isroot = bool(ydict.get("m²-isroot"))
+        isroot = bool(ydict.get("m²_isroot"))
         lang = ydict.get("lang")
     li_list = [[], [], []]
     files_output = ''
@@ -680,7 +680,7 @@ def get_root_info(path):
             print("ROOT-Suche: Checke ", (path / updir_string).resolve())
         filename, foldertitle, yd = get_folder_filename_title_yaml((path / updir_string).resolve())
         if yd:
-            isrootflag = yd.get("m²-isroot")
+            isrootflag = yd.get("m²_isroot")
             lang2 = yd.get("lang")
             if not lang:
                 lang = lang2    # so wird lang auf den Wert in der nähesten Vorgänger-dir-info.yaml gesetzt

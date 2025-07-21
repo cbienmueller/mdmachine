@@ -19,7 +19,7 @@
                         wort_trennung wie in Python
         2025-05-03  - Seitenverhältnis systematisiert: 
                         Feste Höhe 14,5 cm. 
-                        Standardbreite: iPad air 5th, andere via m²_slide_width = fhd | gen8 | beamer
+                        Standardbreite: iPad air 5th, andere via m²-slide-width = fhd | gen8 | beamer
     */
       
     @page {                         /* Seite festlegen */

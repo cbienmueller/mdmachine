@@ -50,7 +50,7 @@ parser.add_argument("-a", "--all", dest="all_flag",
                     help="Bearbeite ganzes Verzeichnis")
 parser.add_argument("-s", "--sidebar", dest="side_flag", 
                     action="store_const", const=True, default=False, 
-                    help="Erstelle eine sidebar.html. Vorhandene dir_info.yaml wird ausgewertet!")
+                    help="Erstelle eine _mdm_sidebar_.html. Vorhandene dir_info.yaml wird ausgewertet!")
 parser.add_argument("-n", "--sidenavi", dest="sidenavi_flag", 
                     action="store_const", const=True, default=False, 
                     help="Erstelle eine sidenavi.html. Vorhandene dir_info.yaml wird ausgewertet!")
@@ -148,11 +148,11 @@ konvertiert Markdown-Datei(en)
     * und biec-Customizing (CSS)
     * via pandoc in HTML und 
     * via Chrome in Din-A4-PDF, wenn die md-Datei neuer als die HTML-Zieldatei ist.
-    * Mit generate_slides in YAML wird zusätzlich ein SLIDES-PDF erzeugt.
+    * Mit m²_generate_slides in YAML wird zusätzlich ein SLIDES-PDF erzeugt.
 Aufruf alternativ mit...
     --all               Zum einmaligen Konvertieren aller Dateien des akt. Verzeichnisses.
     --poll              Für dauerhaftes Polling des akt. Verzeichnisses.*
-    --sidebar           Zum Erzeugen einer neuen sidebar.html.
+    --sidebar           Zum Erzeugen einer neuen _mdm_sidebar_.html.
     --web               Kombiniert --poll mit --sidebar (letzteres nur nach erfolgter Konvertierung).*
     <datei.md>          Zum Konvertieren genau einer Quell-Datei.
     --force <datei.md>  Erzwingt diese Konvertierung, auch wenn Datei unverändert.

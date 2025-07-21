@@ -22,17 +22,23 @@ def get_yaml_dict_from_md(mdfile):
     """
     yaml_block = ''
     yaml_dict = {}
+    reading = True
     try:
         with mdfile.open() as f:
-            line = f.readline()
+            line = f.readline().strip()
+            # Überspringe führende (illegale) Leerzeilen:
+            while not line.strip():
+                line = f.readline()
+            
             if line.startswith("---") or line.startswith("..."):
                 line = f.readline()
-                while line:
-                    if not (line.startswith("---") or line.startswith("...")):
-                        yaml_block += line
-                    else:
+                while reading:
+                    if line.strip() and \
+                       (line.startswith("---") or line.startswith("...")):
+                        reading = False
                         yaml_dict = yaml.safe_load(yaml_block)
                         break
+                    yaml_block += line
                     line = f.readline()
     except Exception:
         pass                # nicht lesbar = nicht interessant...

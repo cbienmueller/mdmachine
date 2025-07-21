@@ -15,7 +15,7 @@ from pathlib import Path
 from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md 
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
-from mdmwrx.sidebar import get_root_info, make_sidebar
+from mdmwrx.sidebar import get_folder_filename_title_yaml, get_root_info, make_sidebar, make_sitemap
 
 
 @dataclass
@@ -167,7 +167,7 @@ def handle_update(path, force_flag, poll_flag):
               ' * Setzte zuerst "isroot: True" oder\n'
               ' * Wechsle in das Rootverzeichnis der Dokumente')
         exit()
-    print("Schritt 1:\nRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n sowie dann auch sidebar.html aktualisieren.\n")
+    print("Schritt 1:\nRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n sowie dann auch _mdm_sidebar_.html aktualisieren.\n")
     handle_dir(path, do_print=False,
                do_sidebar=True, do_force=force_flag,
                do_recursive=True)
@@ -230,8 +230,8 @@ def handle_dir(path, do_print=True, dryrun=False, do_sidebar=False, do_force=Fal
             make_sidebar(path)
         elif (path / "dir_info.yaml").exists():  # Die Datei ist ja nicht ohne Grund da...
             make_sidebar(path, talk="auto-sidebar, da dir_info.yaml existiert")
-        elif (path / "sidebar.html").exists():  # Die Datei ist ja nicht ohne Grund da...
-            make_sidebar(path, talk="auto-sidebar, da sidebar.html bereits existiert")
+        elif (path / "_mdm_sidebar_.html").exists():  # Die Datei ist ja nicht ohne Grund da...
+            make_sidebar(path, talk="auto-sidebar, da _mdm_sidebar_.html bereits existiert")
         if do_recursive:
             alte_Dateien_entfernen(path)
         else:
@@ -279,7 +279,7 @@ def do_poll(startpath, do_sidebar=False, do_force=False, do_recursive=False):
 
 def check_if_path_is_root(path):
     _, _, yd = get_folder_filename_title_yaml(path)
-    isrootflag = yd.get("m²-isroot")
+    isrootflag = yd.get("m²_isroot")
     return isrootflag
 
 
@@ -312,23 +312,24 @@ def get_meta_from_mdyaml(mdfile):
 
     # print(yaml_dict)    # nur für debugging
     if yaml_dict:
-        gen_slides_value = yaml_dict.get("m²-generate-slides")
+        gen_slides_value = yaml_dict.get("m²_generate_slides")
         if gen_slides_value and str(gen_slides_value)[0].lower() in ("t", "y", "j", "1", "k"):
             mymeta.gen_slides_flag = True
             if str(gen_slides_value)[0].lower() == "k":
                 mymeta.keep_slides_html_flag = True
+        
         mymeta.lang = yaml_dict.get("lang")
         mymeta.title = yaml_dict.get("title")
         # print("YAML-title: ", mymeta.title)
-        mymeta.suppress_pdf_flag = yaml_dict.get("m²-suppress-pdf", False)
-        includes = yaml_dict.get("m²-include-after")
+        mymeta.suppress_pdf_flag = yaml_dict.get("m²_suppress_pdf", False)
+        includes = yaml_dict.get("m²_include_after")
         if isinstance(includes, str):
             includes = [includes]
         if not isinstance(includes, list):
             includes = []
         
         # Nun eine Liste einzufügender Style-Schnipsel-Dateien
-        i_s = yaml_dict.get("m²-include-style")
+        i_s = yaml_dict.get("m²_include_style")
         if isinstance(i_s, list):
             mymeta.inc_style_list = [str(x).lower() for x in i_s]
         elif i_s:
@@ -337,7 +338,7 @@ def get_meta_from_mdyaml(mdfile):
             mymeta.inc_style_list = []      # Dummywert
         
         # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
-        s_f = yaml_dict.get("m²-slide-format")
+        s_f = yaml_dict.get("m²_slide_format")
         if isinstance(s_f, list):
             mymeta.slide_format_list = [str(x).lower() for x in s_f]
         elif s_f:
