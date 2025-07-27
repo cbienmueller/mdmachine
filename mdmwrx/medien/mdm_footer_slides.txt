@@ -1,5 +1,5 @@
 
-        <!-- my_footer_slides.txt -->
+        <!-- mdm_footer_slides.txt -->
         <img
             style="
                 position: fixed;

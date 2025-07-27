@@ -20,6 +20,7 @@ from argparse import ArgumentParser
 import mdmwrx.tasks
 from mdmwrx.sidebar import write_demo_dir_info_yaml, \
     make_sidebar, make_new_sidenavi
+from mdmwrx.config import get_config_obj
 
 # get_root_info, make_sitemap, get_folder_filename_title_yaml, \
 
@@ -27,17 +28,18 @@ from mdmwrx.sidebar import write_demo_dir_info_yaml, \
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 0.9.24 von 2025-06-29: mit rekursivem polling')
+print('mdmachine Version 0.9.30 von 2025-07-23: mit mdm_root.yaml')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
 
 # Pfad, in dem Medien-Dateien liegen, hauptsächlich CSS-Includes
-mdmwrx.tasks.medien_path: Path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
-print(f'Medienverzeichnis:  {mdmwrx.tasks.medien_path}')
+medien_path: Path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
+print(f'Medienverzeichnis:  {medien_path}')
 
 # Arbeitspfad ("von wo wurde mdmachine aufgerufen, wo liegen die Dateien")
 startpath = Path(".").resolve()
+config_obj = get_config_obj(startpath, medien_path)  # Klärt z.B. wo root liegt und liest dort abgelegte Konfig ein
 
 do_sidebar = False
 parser = ArgumentParser()
@@ -80,7 +82,7 @@ sitemap_flag = False
 
 if len(sys.argv) > 1:
     if mdm_args.sitemap_flag:
-        mdmwrx.tasks.handle_sitemap(startpath)
+        mdmwrx.tasks.handle_sitemap(config_obj, startpath)
         exit()
         
     for file_name in (mdm_args.file_names if mdm_args.file_names else ['.']):
@@ -106,21 +108,21 @@ if len(sys.argv) > 1:
             continue  # was immer weder file noch dir sein soll
     
         if mdm_args.update_flag:
-            mdmwrx.tasks.handle_update(startpath, mdm_args.force_flag, mdm_args.poll_flag)  
+            mdmwrx.tasks.handle_update(config_obj, startpath, mdm_args.force_flag, mdm_args.poll_flag)  
             # Endlos mit poll_flag, daher Option unten palmäßig nicht mehr erreichbar.
             
         if mdm_args.all_flag:
-            mdmwrx.tasks.handle_dir(startpath, 
+            mdmwrx.tasks.handle_dir(config_obj, startpath, 
                                     do_sidebar=mdm_args.side_flag, do_force=mdm_args.force_flag,
                                     do_recursive=mdm_args.recursive_flag)
             continue
             
         if mdm_args.side_flag:
-            make_sidebar(startpath, do_recursive=mdm_args.recursive_flag)
+            make_sidebar(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
             continue
 
         if mdm_args.sidenavi_flag:
-            make_new_sidenavi(startpath)
+            make_new_sidenavi(config_obj, startpath)
             continue
             
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück
@@ -135,7 +137,7 @@ if len(sys.argv) > 1:
                                  do_recursive=mdm_args.recursive_flag)
             
         if flag_is_source_file:
-            erfolg, _ = mdmwrx.tasks.handle_file(sourcefile, do_force=mdm_args.force_flag)
+            erfolg, _ = mdmwrx.tasks.handle_file(config_obj, sourcefile, do_force=mdm_args.force_flag)
             if not erfolg:
                 print(f'Datei {sourcefile.name} nicht gefunden oder keine Markdowndatei\n Optionen: <Dateiname> | --polling')
             else:
@@ -168,6 +170,6 @@ Aufruf alternativ mit...
     
 DryRun ("was wäre wenn") im Verzeichnis\n    {startpath}:
     ''')
-    mdmwrx.tasks.handle_dir(startpath, dryrun=True)
+    mdmwrx.tasks.handle_dir(config_obj, startpath, dryrun=True)
     print("Keine Konvertierung wurde durchgeführt, da kein Parameter angegeben wurde.")
     

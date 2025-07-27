@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
 
-
 SB_VERBOSE = False
 
 DEMO_DIR_INFO_YAML = """
@@ -30,23 +29,12 @@ DEMO_DIR_INFO_YAML = """
 ##          Dies kann hier übersteuert werden (kann inkonsistent wirken)
 #m²_overridetitle: Demoinhalte
 ##
-##      isroot: False 
-##          Flag, ob DIESES Verzeichnis ab hier als Home / Root 
-##          des darunterliegenden Verzeichnisbaums anzusehen ist. 
-##          Der Linktitel wird der Datei oder ggf. obigem overridetitle entnommen.
-#m²_isroot: True
-##
 ##      subdirprio: High oder Low
 ##          Wird damit in der sidebar des übergeordneten Verzeichnisses einsortiert.
 ##          Dort werden High/normal/Low in drei Blöcken, jeweils in sich alphabetisch sortiert
 ##          angeordnet im Format Fett/normal/kursiv.
 #m²_subdirprio: Low
 ##      
-##      lang: Sprachstring
-##          welche Sprache soll als HTML lang Wert gesetzt werden.
-##          Wert im Markdown-YAML-Block überschreibt dies.
-#lang: "de-DE"
-     
 
 ## 2. Linklisten
 ##      links ist ein array of dicts (welche link, title und hover als keys enthalten).
@@ -56,19 +44,13 @@ DEMO_DIR_INFO_YAML = """
 ##          Sichtbarkeit: Sie sind also neben jeder Seite dieses Verzeichnisses sichtbar
 ##          Anzahl: Kein Limit...
 ##
-#m²-links:
+#m²_links:
 #    - link:  'http://example.com'
 #      title: 'Example-homepage'
 #    - link:  'https://www.google.com'
 #      title: 'Let's Search something'
 #      hover: 'go to google'
 ##
-##      m²-fixlinks: wie oben "links", werden aber nur beachtet, wenn isroot = True ist
-##          Sichtbarkeit: Sie sind also neben jeder Seite dieses und aller untergeordneten Verzeichnisse sichtbar
-##          Ausnahme: Wenn einuntergeordnetes selbst wieder isroot gesetzt hat.
-#m²-fixlinks:
-#    - link:  'http://example.de'
-#      title: 'Deutsche Homepage'
 """
 
 FILE_barebone = """<!DOCTYPE html>
@@ -162,14 +144,14 @@ def write_demo_dir_info_yaml(path):
     return str(le_path)
         
 
-def make_sitemap(path):
-    sm_path = path / 'sitemap.html'
-    tl_path = path / '_mdm_timeline_.html'
+def make_sitemap(c_o, root_path):
+    sm_path = root_path / 'sitemap.html'
+    tl_path = root_path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
-    lang = "de"
+    lang = c_o.lang
     with open(sm_path, 'w') as f:
         # ## Dateistart
-        content, lang = get_folderinfo4sitemap(path, "", timeline_list)  
+        content = get_folderinfo4sitemap(root_path, "", timeline_list)  
         # wird rekursiv für jedes Unterverzeichnis aufgerufen
         # lang kommt nur vom root-dir_info.yaml
         # timeline_list nimmt Datum und Beschreibungstext auf
@@ -186,75 +168,73 @@ def make_sitemap(path):
         f.write(TIMELINE_fine)
 
 
-def make_new_sidenavi(aktpath):
+def make_new_sidenavi(c_o, path):
     with open(sm_path, 'w') as f:
-        content, lang = get_side_navi(aktpath)
+        content, lang, _ = get_side_navi(c_o, c_o.rootpath)
+        if SB_VERBOSE:
+            print(f"Content für make_new_sidenavi:{content}")
         f.write(SIDEBAR_barebone.format(lang, 'Sitemap'))
         f.write(content)
         f.write(SIDEBAR_fine)
 
 
-def get_side_navi(aktpath):
-    ri = get_root_info(aktpath)
-    startpath = ri.root_path
+def get_side_navi(c_o, path):
+    ri = get_root_info(c_o, path)
     timeline_list_dummy = [("2024-01-01", "dummy")]
-    lang = "de"
-    content, lang = get_folderinfo4sitemap(startpath, ri.updir_string, timeline_list_dummy, aktpath)
+    lang = ri.lang
+    content = get_folderinfo4sitemap(ri.root_path, ri.updir_string, timeline_list_dummy, path)
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-dir_info.yaml
     # timeline_list nimmt Datum und Beschreibungstext auf
     # Enthält nur im aktpath die Dateien
-    return content, lang
+    return content, lang, ri
         
         
-def get_folderinfo4sitemap(mypath, relpath, timeline_list, filespath=""):
-    ''' mypath ist das wirklich zu analysierende Verzeichnis.
+def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
+    ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
         relpath ist der zu den Links zu addierende path, der den Ort relativ zum Verzeichnis von make_sitemap angibt.
         timeline_list nimmt Datei-Datum-Pärchen auf.
         filespath ist (wenn gesetzt) der einzige Pfad, bei dem Files mit aufgeführt werden. Sonst nur Verzeichnisse.
     '''
     if SB_VERBOSE:
-        print("gfi4sm ", mypath, "!")
-    if not mypath:
-        return "", ""
-    filename, foldertitle, yd = get_folder_filename_title_yaml(mypath)
-    if yd:
-        lang = yd.get("lang")
-    else:
-        lang = ""
+        print("gfi4sm-> root_path: ", root_path, "rel:", relpath, "!")
+    if not root_path:
+        return ""
+    filename, foldertitle, yd = get_folder_filename_title_yaml(root_path)
     if filename and foldertitle:
         if relpath and not relpath.endswith("/"):
             relpath += "/"
         smf_output = ""
         
-        if filespath: 
-            print(filespath, mypath)
-        if not filespath or mypath == filespath:
+        if filespath and SB_VERBOSE:: 
+            print(filespath, root_path)
+        if not filespath or root_path == filespath:
             all_files = True
         else:
             all_files = False
-        l_section, _, _, _ = get_files_section(mypath, relpath, foldertitle, timeline_list, all_files)
+        l_section, _, _, _ = get_files_section(root_path, relpath, foldertitle, timeline_list, all_files)
         smf_output += l_section
 
         smf_sub_output = ""
-        for subdir in mypath.iterdir():
+        for subdir in root_path.iterdir():
             if subdir.is_dir():
-                print("recurse sitemap -> " + subdir.name)
-                content, _ = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
+                print("sitemap: recurse into -> " + subdir.name)
+                content = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
                 smf_sub_output += content
         if smf_sub_output:
             smf_output += SIDEBAR_sectionstart.format("", "")
             smf_output += smf_sub_output
             smf_output += SIDEBAR_sectionende
-        return smf_output, lang
-    return "", ""
+        if SB_VERBOSE:
+            print(f"smf_output:{smf_output}")
+        return smf_output
+    return ""
 
 
-def make_sidebar(path, do_recursive=False, talk=""):
+def make_sidebar(c_o, path, do_recursive=False, talk=""):
     ausgabe = path / '_mdm_sidebar_.html'
     
-    ri = get_root_info(path)
-    navi_content, lang = get_side_navi(path)
+    navi_content, lang, ri = get_side_navi(c_o, path)
     
     with open(ausgabe, 'w') as f:
         
@@ -262,7 +242,7 @@ def make_sidebar(path, do_recursive=False, talk=""):
         f.write(navi_content)               # komplette Navigation
         f.write('\t<hr>\n')                 # Trennlinie
         
-        link_section, isroot_flag, l_anzahl = get_links_section_isroot(path)
+        link_section, l_anzahl = get_links_section(path)
         
         f.write(link_section) 
 
@@ -277,74 +257,7 @@ def make_sidebar(path, do_recursive=False, talk=""):
         for subdir in path.iterdir():
             if subdir.is_dir():
                 print("recurse sidebar -> " + subdir.name)
-                make_sidebar(subdir, do_recursive, talk)
-
-
-def make_sidebar_ORG(path, do_recursive=False, talk=""):
-    ausgabe = path / '_mdm_sidebar_.html'
-    p_anzahl = 0
-    
-    with open(ausgabe, 'w') as f:
-        
-        # ## Was bietet root?
-        # fixlinks, rootelement, lang, fl_anzahl 
-        ri = get_root_info(path)
-            
-        # ## Liste der Dateien im Verzeichnis ermitteln
-        filessection, f_anzahl, isroot, lang2 = get_files_section(path)
-        
-        if lang2:
-            lang = lang2
-        else:
-            lang = ri.lang
-        
-        # ## Dateistart ausgeben
-        f.write(SIDEBAR_barebone.format(lang, 'Navigation'))
-        
-        if ri.root_section:
-            f.write(ri.root_section)            # enthält Pfad bis zum aktuellen Verzeichnis
-        
-        if ri.root_section and filessection:    # nur wenn es beides gibt, kommt Trennzeile
-            f.write('\t<hr>\n')
-        
-        if filessection:                    # enthält Dateien im Verzeichnis
-            f.write(filessection)
-                    
-        f.write('\t<hr>\n')                 # Trennlinie
-        
-        if not isroot:
-            par_section, p_anzahl = get_parent_section(path)
-            if p_anzahl:
-                f.write(par_section) 
-                
-        subs_section, s_anzahl, subnamen = get_subdirs_section(path)
-        if subnamen:
-            subnamen = f'({subnamen})'
-        if subs_section:
-            f.write(subs_section)
-        
-        link_section, isroot_flag, l_anzahl = get_links_section_isroot(path)
-        
-        f.write(link_section) 
-                
-        f.write(ri.fixlink_section)
-
-        f.write(SIDEBAR_fine)
-    if talk != "silent":
-        print("┌─Sidebar-Zusammenfassung:")
-        if talk:
-            print("│ " + talk)
-        print(f'│ _mdm_sidebar_.html erstellt mit\n│ {f_anzahl: >5} eingetragenen Seiten '
-              f' sowie\n│ {s_anzahl: >5} Unterverzeichnissen {subnamen}'
-              f' bzw. \n│ {p_anzahl: >5} Oberverzeichnis'
-              f' und  \n│ {l_anzahl: >5} Links'
-              f' und  \n│ {fl_anzahl: >5} Fixlinks')
-              
-    if do_recursive:
-        for subdir in path.iterdir():
-            if subdir.is_dir():
-                print("recurse sidebar -> " + subdir.name)
-                make_sidebar(subdir, do_recursive, talk)
+                make_sidebar(c_o, subdir, do_recursive, talk)
 
 
 def get_title_prio_from_html(htmlfile, ersatztitel=''):
@@ -454,41 +367,6 @@ def get_subdirs_section(path):
 
     return subs_output, s_anzahl, ", ".join(subname_list)
 
-
-def get_folder_filename_title_yaml(folder_path):
-    """ Liefert nach bestem Bemühen 
-        1 den Dateinamen der indexdatei eines Verzeichnisses und 
-        2 den anzugebenden Title des Verzeichnisses:
-            * den per overridetitle festgelegten oder, wenn leer,
-            * den Title der indexdatei oder, wenn leer,
-            * den Namen des Verzeichnisses
-        3 das YAML-Dict, welches ggf. mehr Infos liefert
-        * Strings sind leer, wenn keine Datei gefunden wurde
-    """
-    # Vorbereitung
-    sby = folder_path / 'dir_info.yaml'
-    # print("Lese Folder-Info von ", sby)
-    folder_title = ''
-    folder_filename = ''
-    sby_dict = {}
-    if sby.is_file():
-        # sby einlesen in sby_dict
-        sby_dict = get_yaml_dict_from_yaml(sby)
-        if sby_dict:
-            folder_filename = sby_dict.get("m²_indexfilename")
-            folder_title = sby_dict.get("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
-    if not folder_filename or not (folder_path / folder_filename).is_file():
-        folder_filename = 'index.html'
-    if not (folder_path / folder_filename).is_file():
-        folder_filename = 'index.htm'
-    
-    if (folder_path / folder_filename).is_file():      # muss ja irgenwann mal
-        if not folder_title:  # jetzt holen wir's lieber aus der Datei; notfalls Verzeichnisname
-            folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, str(folder_path.name))
-        return folder_filename, folder_title, sby_dict 
-        
-    return "", folder_path.name, {}  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
-    
     
 def get_parent_section(path):
     parent_filename, parent_title, parent_dict = get_folder_filename_title_yaml(path.parent)
@@ -502,21 +380,19 @@ def get_parent_section(path):
     return "", 0  # leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
         
         
-def get_links_section_isroot(path):
+def get_links_section(path):
     
-    sby = path / 'dir_info.yaml'
-    isroot = False
+    d_i_y = path / 'dir_info.yaml'
     l_r_output = ''
     l_anzahl = 0
-    if sby.is_file():
-        ydict = get_yaml_dict_from_yaml(sby)
+    if d_i_y.is_file():
+        ydict = get_yaml_dict_from_yaml(d_i_y)
         if ydict:
-            isroot = bool(ydict.get("m²_isroot"))
-            links = ydict.get("m²-links")
+            links = ydict.get("m²_links")
             linkoutput, l_anzahl = format_yaml_links(links)
             if linkoutput:
                 l_r_output = SIDEBAR_sectionstart.format("&#x2B00; Links", "") + linkoutput + SIDEBAR_sectionendemini
-    return l_r_output, isroot, l_anzahl
+    return l_r_output, l_anzahl
     
     
 def format_yaml_links(links):
@@ -654,17 +530,11 @@ class RootInfo:
     root_path: str = ""
 
 
-def get_root_info(path):
-    """ gibt ab jetzt ein RootInfo-Objekt zurück
+def get_root_info(c_o, akt_path):
+    """ bekommt ein Config_Obj sowie den akt. Path und
+        gibt ein RootInfo-Objekt zurück
     """
-    
-    """ ...gibt drei Strings und eine Zahl zurück:
-        * str: die unter fixlinks abgelegten Links komplett als Section
-        * str: die Root-Section, mit allen Verzeichnissen von dort bis zum aktuellen.
-        * str: den lang-Parameter
-        * die Anzahl der fixlinks
-    """
-    debug = False
+    debug = True
     updir_count = 0
     updir_string = ""
     filename = ""
@@ -672,70 +542,99 @@ def get_root_info(path):
     fl_anzahl = 0
     pathlist = []
     pathlistoutput = ""
-    isrootflag = False
-    lang = ""
     
-    while not isrootflag and len(str((path / updir_string).resolve())) > 1:
-        if debug: 
-            print("ROOT-Suche: Checke ", (path / updir_string).resolve())
-        filename, foldertitle, yd = get_folder_filename_title_yaml((path / updir_string).resolve())
-        if yd:
-            isrootflag = yd.get("m²_isroot")
-            lang2 = yd.get("lang")
-            if not lang:
-                lang = lang2    # so wird lang auf den Wert in der nähesten Vorgänger-dir-info.yaml gesetzt
-        if debug: 
-            print("ROOT-Suche: Check-Ergebnis fn,ft,ir;", filename, ", ", foldertitle, ", ", isrootflag)
-        if isrootflag:  # abschließen
-            if debug: 
-                print("ROOT-Suche: gefunden als ", (path / updir_string / filename).resolve())
-            flinks = yd.get("m²-fixlinks")
-            
-            flinkoutput, fl_anzahl = format_yaml_links(flinks)
-            
-            if flinkoutput:
-                fl_output = SIDEBAR_sectionstart.format("&#x2B00; globale Links", "") + flinkoutput + SIDEBAR_sectionende
+    if debug: 
+        print("ROOT-Info: START für ", akt_path)
 
-            if pathlist:
-                nbs = ""
-                for fnam, ftit in pathlist:
-                    pathlistoutput += SIDEBAR_li_bb[1].format("", fnam, "", "", nbs + "&#8618; " + ftit, "")
-                    nbs += "&numsp;&numsp;"
-                    
-            if updir_string:
-                if debug: 
-                    print("ROOT-Suche: PathListOutput:\n" + pathlistoutput)
-                root_section = \
-                    SIDEBAR_sectionstart.format('&#8962;', "") + \
-                    SIDEBAR_li_bb[2].format("", updir_string + "/" + filename, "", "", foldertitle, "") + \
-                    pathlistoutput + \
-                    SIDEBAR_sectionende
-                return RootInfo(fl_output, fl_anzahl, root_section, lang, updir_string, (path / updir_string).resolve())
-                # fl_output,                     root_section,                     lang,                     fl_anzahl
-            else:
-                return RootInfo(fl_output, fl_anzahl, 
-                                SIDEBAR_sectionstart.format('&#8962;', "") + 
-                                SIDEBAR_li_bb[2].format("", filename, "", "", foldertitle, "") + 
-                                SIDEBAR_sectionende, 
-                                lang, 
-                                updir_string, (path / updir_string).resolve())
-                return fl_output, \
-                    SIDEBAR_sectionstart.format('&#8962;', "") + \
-                    SIDEBAR_li_bb[2].format("", filename, "", "", foldertitle, "") + \
-                    SIDEBAR_sectionende, \
-                    lang, \
-                    fl_anzahl
-        elif filename:  # wenigstens wurde irgendeine Indexdatei gefunden
-            if updir_string:
-                pathlist.insert(0, (updir_string + "/" + filename, foldertitle))
-            else:
-                pathlist.insert(0, (filename, foldertitle))
-                
-            updir_count += 1
-            updir_string = ("../" * updir_count)[:-1]
-            print(updir_string)
-        else:           # Keine Indexdatei: Abbruch!
-            return RootInfo()
+    if not c_o.flag_root_exists:
+        return RootInfo()
+
+    # Schleife über alle Verzeichnisse von start bis root
+    updir_count = 0
+    while True:
+        updir_string = ("../" * updir_count)[:-1]
+        if debug: 
+            print(f"Root-Info: Aktueller updir_string:'{updir_string}'")
+            print(f"ROOT-Info: Checke Verzeichnis:{(akt_path / updir_string).resolve()}")
+        filename, foldertitle, yd = get_folder_filename_title_yaml((akt_path / updir_string).resolve())
+        if debug: 
+            print("ROOT-Info: Check-Ergebnis fn,ft: ", filename, ", ", foldertitle)
+        
+        if filename:  # wenigstens wurde irgendeine Indexdatei gefunden
+            pathlist.insert(0, (updir_string + "/" + filename, foldertitle))
+        else:         # vielleicht können Browser /Webserver das Problem lösen  
+            pathlist.insert(0, (updir_string + "/", foldertitle))  
+        
+        # Ausstieg
+        if (akt_path / updir_string / 'mdm_root.yaml').is_file():
+            break
+
+        updir_count += 1
+
+    # Nun sind wir bei root angekommen, der erste Eintrag in pathlist ist der des root-Verzeichnisses
+    if debug: 
+        print("ROOT-Info: root erreicht: ", (akt_path / updir_string / filename).resolve())
     
-    return RootInfo()
+    flinks = c_o.fixlinks
+    
+    flinkoutput, fl_anzahl = format_yaml_links(flinks)
+    
+    if flinkoutput:
+        fl_output = SIDEBAR_sectionstart.format("&#x2B00; globale Links", "") + flinkoutput + SIDEBAR_sectionende
 
+    rootfirst = True
+    nbs = ""
+    for fnam, ftit in pathlist:
+        if rootfirst:
+            # pathlistoutput = SIDEBAR_li_bb[2].format("", updir_string + "/" + filename, "", "", foldertitle, "")
+            pathlistoutput = SIDEBAR_li_bb[2].format("", fnam, "", "", ftit, "")
+            rootfirst = False
+        else:
+            pathlistoutput += SIDEBAR_li_bb[1].format("", fnam, "", "", nbs + "&#8618; " + ftit, "")
+            nbs += "&numsp;&numsp;"
+            
+    if debug: 
+        print("ROOT-Info: PathListOutput:\n" + pathlistoutput)
+    
+    root_section = \
+        SIDEBAR_sectionstart.format('&#8962;', "") + \
+        pathlistoutput + \
+        SIDEBAR_sectionende
+    
+    return RootInfo(fl_output, fl_anzahl, root_section, c_o.lang, updir_string, (akt_path / updir_string).resolve())
+    
+   
+def get_folder_filename_title_yaml(folder_path):
+    """ Liefert nach bestem Bemühen 
+        1 den Dateinamen der indexdatei eines Verzeichnisses und 
+        2 den anzugebenden Title des Verzeichnisses:
+            * den per overridetitle festgelegten oder, wenn leer,
+            * den Title der indexdatei oder, wenn leer,
+            * den Namen des Verzeichnisses
+        3 das YAML-Dict, welches ggf. mehr Infos liefert
+        * Strings sind leer, wenn keine Datei gefunden wurde
+    """
+    # Vorbereitung
+    d_i_y = folder_path / 'dir_info.yaml'
+    # print("Lese Folder-Info von ", d_i_y)
+    folder_title = ''
+    folder_filename = ''
+    d_i_y_dict = {}
+    if d_i_y.is_file():
+        # d_i_y einlesen in d_i_y_dict
+        d_i_y_dict = get_yaml_dict_from_yaml(d_i_y)
+        if d_i_y_dict:
+            folder_filename = d_i_y_dict.get("m²_indexfilename")
+            folder_title = d_i_y_dict.get("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
+    if not folder_filename or not (folder_path / folder_filename).is_file():
+        folder_filename = 'index.html'
+    if not (folder_path / folder_filename).is_file():
+        folder_filename = 'index.htm'
+    
+    if (folder_path / folder_filename).is_file():      # muss ja irgenwann mal
+        if not folder_title:  # jetzt holen wir's lieber aus der Datei; notfalls Verzeichnisname
+            folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, str(folder_path.name))
+        return folder_filename, folder_title, d_i_y_dict 
+        
+    return "", folder_path.name, {}  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
+    

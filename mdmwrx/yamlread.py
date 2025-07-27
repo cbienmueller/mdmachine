@@ -56,4 +56,4 @@ def get_yaml_dict_from_yaml(yamlfile):
     except Exception:
         pass                # nicht lesbar = nicht interessant...
     return yaml_dict
-    
+ 

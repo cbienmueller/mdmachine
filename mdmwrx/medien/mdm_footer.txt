@@ -1,5 +1,5 @@
 
-<!-- my_footer.txt -->
+<!-- mdm_footer.txt -->
 <div id="footer" alt="Biene als Logo" style="text-align:right;">
     <a href="https://www.bienmueller.de" class="no_link_expansion">
         Christian Bienmüller

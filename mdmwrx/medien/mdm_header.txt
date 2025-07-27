@@ -1,13 +1,5 @@
 
-<!-- my_header.txt -->
-
-<link
-    rel="preload"
-    as="font"
-    crossorigin="anonymous"
-    href="https://www.bienmueller.de/fonts/RadioCanadaRegular.woff2"
-    type="font/woff2"
->
+<!-- mdm_header.txt -->
 
 <script>    /* Mini-Javascript um die Sidebar nachzuladen oder das div auszublenden 8. Sept. 2024 */
     function create_sidebar() { 
@@ -48,6 +40,5 @@
     div.m²_very_large, span.m²_very_large { font-size:140%; line-height: 220%; }
 </style>
 
-<link rel="Stylesheet" type="text/css" href="https://www.bienmueller.de/css/cb.css">
-<link rel="Stylesheet" type="text/css" href="https://www.bienmueller.de/css/cb_md.css">
+
 

@@ -15,7 +15,8 @@ from pathlib import Path
 from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md 
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
-from mdmwrx.sidebar import get_folder_filename_title_yaml, get_root_info, make_sidebar, make_sitemap
+from mdmwrx.sidebar import get_folder_filename_title_yaml, make_sidebar, make_sitemap
+from mdmwrx.config import Config_Obj
 
 
 @dataclass
@@ -30,8 +31,8 @@ class MdYamlMeta:
     
 @dataclass
 class ConvertData:
-    path: Path
-    medien_path: Path
+    c_o: Config_Obj
+    aktpath: Path
     tmp_filestem: str
     mymeta: MdYamlMeta
 
@@ -40,7 +41,7 @@ class ConvertData:
 lastconverted = {}
 
 
-def handle_file(sourcefile, do_print=True, dryrun=False, do_force=False):
+def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     """gibt (bool erfolg, int anzahl) zurück"""
     flag_do_convert = False
     if not (sourcefile.is_file() and 
@@ -97,7 +98,7 @@ def handle_file(sourcefile, do_print=True, dryrun=False, do_force=False):
     mymeta, includes = get_meta_from_mdyaml(sourcefile)
     
     if not mymeta.lang:
-        mymeta.lang = get_root_info(path).lang
+        mymeta.lang = c_o.lang
     
     tmp_filestem = "_mdmtemp_" + uuid.uuid4().hex
     tmp_preproc_file = path / f'{tmp_filestem}_preproc.md'
@@ -122,7 +123,7 @@ def handle_file(sourcefile, do_print=True, dryrun=False, do_force=False):
             else:
                 print(f'!!! include-file {incname} missing!!!')
                 
-    do_convert(ConvertData(path, medien_path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
+    do_convert(ConvertData(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
     
     endungen = ['_SLIDES.html', '_SLIDES.pdf', '.html', '_A4.pdf']
     for s_format in SLIDE_FORMATE.keys():
@@ -159,30 +160,29 @@ def handle_file(sourcefile, do_print=True, dryrun=False, do_force=False):
     return True, 1
 
 
-def handle_update(path, force_flag, poll_flag):
+def handle_update(c_o, path, force_flag, poll_flag):
     print("\nGewählte Funktion: Update - überprüft gesamten Dokumentenbaum.\n")
-    if not check_if_path_is_root(path):
-        print('Das aktuelle Verzeichnis ist nicht in seiner dir_info.yaml als Root deklariert.\n'
-              'Daher wird kein Komplett-Update durchgeführt.\nLösung:\n'
-              ' * Setzte zuerst "isroot: True" oder\n'
-              ' * Wechsle in das Rootverzeichnis der Dokumente')
+    if not c_o.flag_dir_is_root:
+        print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
+              'Daher wird kein Komplett-Update durchgeführt.')
         exit()
-    print("Schritt 1:\nRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n sowie dann auch _mdm_sidebar_.html aktualisieren.\n")
-    handle_dir(path, do_print=False,
+    print("Schritt 1:\nRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n"
+          " sowie dann auch _mdm_sidebar_.html aktualisieren.\n")
+    handle_dir(c_o, path, do_print=False,
                do_sidebar=True, do_force=force_flag,
                do_recursive=True)
     print("Schritt 2:\nsitemap.html erstellen\n")
-    make_sitemap(path)
+    make_sitemap(c_o, path)
     print("Fertig zum Upload!")
     if poll_flag:
         print("\nGewählte Funktion: Polling - überprüft still gesamten Dokumentenbaum alle 5 Sekunden bis zu CTRL-C!\n")
         while True:  
-            konvertierte = handle_dir(path, do_print=False,
+            konvertierte = handle_dir(c_o, path, do_print=False,
                                       do_sidebar=True, do_force=False,
                                       do_recursive=True, be_quiet=True)
             if konvertierte:
                 print("Folgeaufgabe wg. Konvertierung: sitemap.html erstellen\n")
-                make_sitemap(path)
+                make_sitemap(c_o, path)
                 print("Nun wieder stilles Polling")
             else:
                 try:
@@ -192,17 +192,15 @@ def handle_update(path, force_flag, poll_flag):
                     exit()
         
     
-def handle_sitemap(path):
-    if not check_if_path_is_root(path):
-        print('Das aktuelle Verzeichnis ist nicht in seiner dir_info.yaml als Root deklariert.\n'
-              'Daher wird keine sitemap erstellt.\nLösung:\n'
-              ' * Setzte zuerst "isroot: True" oder\n'
-              ' * Wechsle in das Rootverzeichnis der Dokumente')
+def handle_sitemap(c_o, path):
+    if not c_o.flag_dir_is_root:
+        print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
+              'Daher wird keine sitemap erstellt.\n')
         exit()
-    make_sitemap(path)
+    make_sitemap(c_o, path)
     
     
-def handle_dir(path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
+def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
                indent="", be_quiet=False):
     konvertierte = 0
     subdirs = 0
@@ -214,10 +212,10 @@ def handle_dir(path, do_print=True, dryrun=False, do_sidebar=False, do_force=Fal
                 sourcefile.stem.startswith("_mdtemp") or sourcefile.stem.startswith("_mdmtemp") or
                 (sourcefile.stem.startswith("_") and sourcefile.stem.endswith("_"))):
             if sourcefile.is_file():        
-                _, n = handle_file(sourcefile, do_print, dryrun, do_force)
+                _, n = handle_file(c_o, sourcefile, do_print, dryrun, do_force)
                 konvertierte += n
             elif do_recursive and sourcefile.is_dir():
-                konvertierte += handle_dir(sourcefile, 
+                konvertierte += handle_dir(c_o, sourcefile, 
                                            do_print, dryrun, do_sidebar, do_force, do_recursive,
                                            indent="  " + indent, be_quiet=be_quiet)
                 subdirs += 1
@@ -227,11 +225,11 @@ def handle_dir(path, do_print=True, dryrun=False, do_sidebar=False, do_force=Fal
             
     if konvertierte:
         if do_sidebar:
-            make_sidebar(path)
+            make_sidebar(c_o, path)
         elif (path / "dir_info.yaml").exists():  # Die Datei ist ja nicht ohne Grund da...
-            make_sidebar(path, talk="auto-sidebar, da dir_info.yaml existiert")
+            make_sidebar(c_o, path, talk="auto-sidebar, da dir_info.yaml existiert")
         elif (path / "_mdm_sidebar_.html").exists():  # Die Datei ist ja nicht ohne Grund da...
-            make_sidebar(path, talk="auto-sidebar, da _mdm_sidebar_.html bereits existiert")
+            make_sidebar(c_o, path, talk="auto-sidebar, da _mdm_sidebar_.html bereits existiert")
         if do_recursive:
             alte_Dateien_entfernen(path)
         else:
@@ -257,7 +255,8 @@ def handle_dir(path, do_print=True, dryrun=False, do_sidebar=False, do_force=Fal
 def do_poll(startpath, do_sidebar=False, do_force=False, do_recursive=False):
     print('Funktion: Polling')
     k = 1
-    handle_dir(startpath, 
+    handle_dir(c_o, 
+               startpath, 
                do_sidebar=do_sidebar, 
                do_force=do_force,              # force max nur beim ersten Mal
                do_recursive=do_recursive)
@@ -273,7 +272,7 @@ def do_poll(startpath, do_sidebar=False, do_force=False, do_recursive=False):
             except KeyboardInterrupt:
                 print("\nPolling abgebrochen. Kein Problem...")
                 exit()
-        k = handle_dir(startpath, do_print=False, do_sidebar=do_sidebar, do_recursive=do_recursive, be_quiet=True)   
+        k = handle_dir(c_o, startpath, do_print=False, do_sidebar=do_sidebar, do_recursive=do_recursive, be_quiet=True)   
         # hier kein do_force mehr, dafür immer quiet durch die Verzeichnisse...
 
 

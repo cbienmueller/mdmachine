@@ -12,6 +12,8 @@ browserengine = 'google-chrome'
 
 conv_verbose = True
 
+
+# SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
 SLIDE_FORMATE = {
     "gen8": '/opt/medien/css_gen8_slides.txt',
     "beamer": '/opt/medien/css_beamer_slides.txt',
@@ -29,7 +31,19 @@ INCLUDE_STYLE = {
     "orange": '/opt/medien/orange_style.txt', 
 }
 
-# SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
+DYN_HEADER = """<!-- Dyn_header.txt: Wird je nach Konfig. erstellt, benutzt, gelöscht -->
+<link
+    rel="preload"
+    as="font"
+    crossorigin="anonymous"
+    href="{}"
+    type="font/woff2"
+>
+
+<link rel="Stylesheet" type="text/css" href="{}">
+<link rel="Stylesheet" type="text/css" href="{}">
+
+"""
 
 
 def dbg(ort, variable, wert, comment=""):
@@ -67,7 +81,7 @@ def do_convert(cd):  # cd: ConvertData
     if not erfolg:
         if not conv_verbose:
             # Aufräumen...
-            for tf in cd.path.glob(f'{cd.tmp_filestem}*'):
+            for tf in cd.aktpath.glob(f'{cd.tmp_filestem}*'):
                 try:
                     tf.unlink()
                 except Exception:
@@ -80,8 +94,8 @@ def do_convert(cd):  # cd: ConvertData
 def call_my_docker(cd):
     """Ruft 'mein' Dockerimage auf und startet dort das im Verzeichnis befindliche _mdmtemp..._todo.sh
     """
-    mount_path = f'--mount type=bind,source={cd.path},target=/data'
-    mount_medien = f' --mount type=bind,source={cd.medien_path},target=/opt/medien'
+    mount_path = f'--mount type=bind,source={cd.aktpath},target=/data'
+    mount_medien = f' --mount type=bind,source={cd.c_o.medien_path},target=/opt/medien'
     mount_tmp = '--mount type=bind,source=/tmp/mdmachine,target=/tmp'
     uid = os.geteuid()
     gid = os.getegid()
@@ -131,7 +145,7 @@ def call_my_script(cd):
         
     out, err = "", ""
     prev_cwd = Path.cwd()
-    os.chdir(cd.path)
+    os.chdir(cd.aktpath)
     try:
         p = subprocess.Popen(" ".join(kommando), shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE) 
         try:
@@ -178,19 +192,25 @@ def convert2html(cd):
     if cd.mymeta.force_title:
         html_todo_base += [
             '--metadata', f'pagetitle="{cd.mymeta.title}"']  # Titel aus dem Dateinamen wenn nicht im Source-md enthalten.
+
+    with open((cd.aktpath / f'{cd.tmp_filestem}_header.txt'), 'w') as f:
+        f.write(DYN_HEADER.format(cd.c_o.mainfont,
+                                  cd.c_o.cssfile_main,
+                                  cd.c_o.cssfile_md))
         
     html_todo_base += [    
         '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen
         '--toc', '--toc-depth=2',                           # Regeln für Inhaltsverzeichnis
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
-        '-H', '/opt/medien/my_header.txt',                         # füge script und css-Links in den header ein
+        '-H', f'{cd.tmp_filestem}_header.txt',              # mit ggf. anderen CSS-Datei-URLs usw.
+        '-H', '/opt/medien/mdm_header.txt',                 # füge script und css-Links in den header ein
         '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
         inc_liste
     
     html_todo = html_todo_base + [
         '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
-        '-A', '/opt/medien/my_footer.txt',                     # füge HTML + Script am Ende des Bodys ein
+        '-A', '/opt/medien/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein
         f'{cd.tmp_filestem}_preproc.md']                   # temporäre Eingabedatei nach Präprozessing
     
     slides_todo = []                                    # Liste der Parameter um HTML-Slides zu erzeugen
@@ -210,14 +230,14 @@ def convert2html(cd):
                 
             slides_todo += [
                 '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html',        # andere Zieldatei
-                '-A', '/opt/medien/my_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
+                '-A', '/opt/medien/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
                 
             slides_todo += additional_stylefile + [
-                '-A', '/opt/medien/my_footer_slides.txt',          # füge HTML am Ende des Bodys ein
+                '-A', '/opt/medien/mdm_footer_slides.txt',          # füge HTML am Ende des Bodys ein
                 f'{cd.tmp_filestem}_preproc.md',               # temporäre Eingabedatei nach Präprozessing
                 '\n'] 
 
-    with open((cd.path / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
+    with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
         f.write('# Shellskript, das im dockercontainer ausgeführt wird\n'
                 'export XDG_CONFIG_HOME=/tmp/m³_config\n'
                 'export XDG_CACHE_HOME=/tmp/m²_cache\n')
@@ -230,7 +250,7 @@ def convert2html(cd):
             
     call_my_docker(cd) 
     
-    if not (cd.path / f'{cd.tmp_filestem}.html').exists():
+    if not (cd.aktpath / f'{cd.tmp_filestem}.html').exists():
         print(f'ERROR & Abbruch! Zieldatei {cd.tmp_filestem}.html nicht gefunden')
         return False
 
@@ -249,7 +269,7 @@ def convert2A4pdf(cd):
 
     dbg("convert2A4pdf", "ToDo-Skript", f'{cd.tmp_filestem}_todo.sh')
     
-    with open((cd.path / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
+    with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
         f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                 'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                 'export XDG_CACHE_HOME=/tmp/m²_cache\n')
@@ -260,7 +280,7 @@ def convert2A4pdf(cd):
     # call_my_docker(cd)
     call_my_script(cd)
     
-    if not (cd.path / f'{cd.tmp_filestem}_A4.pdf').exists():
+    if not (cd.aktpath / f'{cd.tmp_filestem}_A4.pdf').exists():
         print(f'ERROR & Abbruch! Zieldatei {cd.tmp_filestem}_A4.pdf nicht gefunden')
         return False
 
@@ -286,7 +306,7 @@ def convert2slides(cd):
             '--no-margins', '--virtual-time-budget=400000',
             f'--print-to-pdf={slides_pdf_filename}', slides_html_filename]
         
-        with open((cd.path / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
+        with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
             f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                     'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                     'export XDG_CACHE_HOME=/tmp/m²_cache\n')
@@ -297,7 +317,7 @@ def convert2slides(cd):
             
         call_my_script(cd)
         
-        if not (cd.path / slides_pdf_filename).exists():
+        if not (cd.aktpath / slides_pdf_filename).exists():
             print(f'ERROR & Abbruch! Zieldatei {slides_pdf_filename} nicht gefunden')
             return False
 
