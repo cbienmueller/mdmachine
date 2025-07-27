@@ -52,18 +52,18 @@ last_java_executes_loaded = False    # auch erfolglose loads zählen
 MERMAID_LOADER = \
     '''\n\n\n
 <!-- Wegen eines Mermaid-Diagramms wird das folgende Modul am Ende eingebunden -->
-    <script type="module">
-        import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-        var nAgt = navigator.userAgent;
-        if (nAgt.indexOf("Firefox")!=-1) {
-        var config = { startOnLoad: true}; 
-        console.log("Firefox erkannt" + nAgt);}
-        else {
-        var config = { startOnLoad: true, securityLevel: "sandbox" };
-        console.log("Kein Firefox erkannt" + nAgt);
-        }
-        mermaid.initialize(config);
-    </script>\n
+<script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    var nAgt = navigator.userAgent;
+    if (nAgt.indexOf("Firefox")!=-1) {
+    var config = { startOnLoad: true}; 
+    console.log("Firefox erkannt" + nAgt);}
+    else {
+    var config = { startOnLoad: true, securityLevel: "sandbox" };
+    console.log("Kein Firefox erkannt" + nAgt);
+    }
+    mermaid.initialize(config);
+</script>\n
 '''
 
 

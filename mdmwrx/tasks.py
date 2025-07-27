@@ -166,12 +166,13 @@ def handle_update(c_o, path, force_flag, poll_flag):
         print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
               'Daher wird kein Komplett-Update durchgeführt.')
         exit()
-    print("Schritt 1:\nRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n"
-          " sowie dann auch _mdm_sidebar_.html aktualisieren.\n")
+    print("Schritt 1:\n\tRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n")
     handle_dir(c_o, path, do_print=False,
                do_sidebar=True, do_force=force_flag,
                do_recursive=True)
-    print("Schritt 2:\nsitemap.html erstellen\n")
+    print("Schritt 2:\n\tsidebars rekursiv erzeugen")
+    make_sidebar(c_o, path, do_recursive=True)
+    print("Schritt 3:\n\tsitemap.html erstellen\n")
     make_sitemap(c_o, path)
     print("Fertig zum Upload!")
     if poll_flag:

@@ -18,8 +18,7 @@ from argparse import ArgumentParser
 
 # mdmaschine worx 
 import mdmwrx.tasks
-from mdmwrx.sidebar import write_demo_dir_info_yaml, \
-    make_sidebar, make_new_sidenavi
+from mdmwrx.sidebar import write_demo_dir_info_yaml, make_sidebar
 from mdmwrx.config import get_config_obj
 
 # get_root_info, make_sitemap, get_folder_filename_title_yaml, \
@@ -53,9 +52,6 @@ parser.add_argument("-a", "--all", dest="all_flag",
 parser.add_argument("-s", "--sidebar", dest="side_flag", 
                     action="store_const", const=True, default=False, 
                     help="Erstelle eine _mdm_sidebar_.html. Vorhandene dir_info.yaml wird ausgewertet!")
-parser.add_argument("-n", "--sidenavi", dest="sidenavi_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Erstelle eine sidenavi.html. Vorhandene dir_info.yaml wird ausgewertet!")
 parser.add_argument("-w", "--web", dest="web_flag", 
                     action="store_const", const=True, default=False, 
                     help="Kombiniere poll und sidebar")
@@ -121,10 +117,6 @@ if len(sys.argv) > 1:
             make_sidebar(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
             continue
 
-        if mdm_args.sidenavi_flag:
-            make_new_sidenavi(config_obj, startpath)
-            continue
-            
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück
             mdmwrx.tasks.do_poll(startpath,
                                  do_force=mdm_args.force_flag,

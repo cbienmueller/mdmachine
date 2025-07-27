@@ -59,8 +59,8 @@ FILE_barebone = """<!DOCTYPE html>
     <meta charset="utf-8" />
     <meta name="generator" content="mdmachine" />
     <title>{}</title>
-    <link rel="Stylesheet" type="text/css" href="https://www.bienmueller.de/css/cb.css">
-    <link rel="Stylesheet" type="text/css" href="https://www.bienmueller.de/css/cb_sb.css">
+    <link rel="Stylesheet" type="text/css" href="{}">
+    <link rel="Stylesheet" type="text/css" href="{}">
 </head>
 """
 
@@ -155,27 +155,17 @@ def make_sitemap(c_o, root_path):
         # wird rekursiv für jedes Unterverzeichnis aufgerufen
         # lang kommt nur vom root-dir_info.yaml
         # timeline_list nimmt Datum und Beschreibungstext auf
-        f.write(SIDEBAR_barebone.format(lang, 'Sitemap'))
+        f.write(SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb))
         f.write(content)
         f.write(SIDEBAR_fine)
         
     with open(tl_path, 'w') as f:
         del timeline_list[0]  # dort ist nur ein Dummy
         timeline_list.sort(key=lambda tup: tup[0], reverse=True)        # sorts in place
-        f.write(TIMELINE_barebone.format(lang, 'TimeLine'))
+        f.write(TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb))
         for d, h in timeline_list[:16]:
             f.write(h)
         f.write(TIMELINE_fine)
-
-
-def make_new_sidenavi(c_o, path):
-    with open(sm_path, 'w') as f:
-        content, lang, _ = get_side_navi(c_o, c_o.rootpath)
-        if SB_VERBOSE:
-            print(f"Content für make_new_sidenavi:{content}")
-        f.write(SIDEBAR_barebone.format(lang, 'Sitemap'))
-        f.write(content)
-        f.write(SIDEBAR_fine)
 
 
 def get_side_navi(c_o, path):
@@ -206,7 +196,7 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
             relpath += "/"
         smf_output = ""
         
-        if filespath and SB_VERBOSE:: 
+        if filespath and SB_VERBOSE: 
             print(filespath, root_path)
         if not filespath or root_path == filespath:
             all_files = True
@@ -238,7 +228,7 @@ def make_sidebar(c_o, path, do_recursive=False, talk=""):
     
     with open(ausgabe, 'w') as f:
         
-        f.write(SIDEBAR_barebone.format(lang, 'Navigation'))
+        f.write(SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb))
         f.write(navi_content)               # komplette Navigation
         f.write('\t<hr>\n')                 # Trennlinie
         
