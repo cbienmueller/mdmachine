@@ -15,8 +15,9 @@ from pathlib import Path
 from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md 
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
-from mdmwrx.sidebar import get_folder_filename_title_yaml, make_sidebar, make_sitemap
+from mdmwrx.sidebar import get_folder_filename_title_yaml, make_sidebar_file, make_sitemap_file
 from mdmwrx.config import Config_Obj
+from mdmwrx.tools import debug
 
 
 @dataclass
@@ -171,9 +172,9 @@ def handle_update(c_o, path, force_flag, poll_flag):
                do_sidebar=True, do_force=force_flag,
                do_recursive=True)
     print("Schritt 2:\n\tsidebars rekursiv erzeugen")
-    make_sidebar(c_o, path, do_recursive=True)
+    make_sidebar_file(c_o, path, do_recursive=True)
     print("Schritt 3:\n\tsitemap.html erstellen\n")
-    make_sitemap(c_o, path)
+    make_sitemap_file(c_o, path)
     print("Fertig zum Upload!")
     if poll_flag:
         print("\nGewählte Funktion: Polling - überprüft still gesamten Dokumentenbaum alle 5 Sekunden bis zu CTRL-C!\n")
@@ -183,7 +184,7 @@ def handle_update(c_o, path, force_flag, poll_flag):
                                       do_recursive=True, be_quiet=True)
             if konvertierte:
                 print("Folgeaufgabe wg. Konvertierung: sitemap.html erstellen\n")
-                make_sitemap(c_o, path)
+                make_sitemap_file(c_o, path)
                 print("Nun wieder stilles Polling")
             else:
                 try:
@@ -198,7 +199,7 @@ def handle_sitemap(c_o, path):
         print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
               'Daher wird keine sitemap erstellt.\n')
         exit()
-    make_sitemap(c_o, path)
+    make_sitemap_file(c_o, path)
     
     
 def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
@@ -225,12 +226,11 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
                 print(f'  * Filename:  {sourcefile.name: <38} wird wegen des Namens übersprungen!')
             
     if konvertierte:
-        if do_sidebar:
-            make_sidebar(c_o, path)
-        elif (path / "dir_info.yaml").exists():  # Die Datei ist ja nicht ohne Grund da...
-            make_sidebar(c_o, path, talk="auto-sidebar, da dir_info.yaml existiert")
-        elif (path / "_mdm_sidebar_.html").exists():  # Die Datei ist ja nicht ohne Grund da...
-            make_sidebar(c_o, path, talk="auto-sidebar, da _mdm_sidebar_.html bereits existiert")
+        if do_sidebar or \
+           c_o.flag_gen_sidebar or \
+           (path / "dir_info.yaml").exists() or \
+           (path / "_mdm_sidebar_.html").exists():
+            make_sidebar_file(c_o, path)
         if do_recursive:
             alte_Dateien_entfernen(path)
         else:

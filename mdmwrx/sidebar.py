@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
+from mdmwrx.tools import debug
 
 SB_VERBOSE = False
 
@@ -144,28 +145,32 @@ def write_demo_dir_info_yaml(path):
     return str(le_path)
         
 
-def make_sitemap(c_o, root_path):
+def make_sitemap_file(c_o, root_path):
     sm_path = root_path / 'sitemap.html'
     tl_path = root_path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
     lang = c_o.lang
-    with open(sm_path, 'w') as f:
-        # ## Dateistart
-        content = get_folderinfo4sitemap(root_path, "", timeline_list)  
-        # wird rekursiv für jedes Unterverzeichnis aufgerufen
-        # lang kommt nur vom root-dir_info.yaml
-        # timeline_list nimmt Datum und Beschreibungstext auf
-        f.write(SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb))
-        f.write(content)
-        f.write(SIDEBAR_fine)
+    
+    # ## Dateistart sitemap
+    content = get_folderinfo4sitemap(root_path, "", timeline_list)  
+    # wird rekursiv für jedes Unterverzeichnis aufgerufen
+    # lang kommt nur vom root-dir_info.yaml
+    
+    output = SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb)
+    output += content
+    output += SIDEBAR_fine
+    overwrite_if_changed(c_o, sm_path, output)
         
-    with open(tl_path, 'w') as f:
-        del timeline_list[0]  # dort ist nur ein Dummy
-        timeline_list.sort(key=lambda tup: tup[0], reverse=True)        # sorts in place
-        f.write(TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb))
-        for d, h in timeline_list[:16]:
-            f.write(h)
-        f.write(TIMELINE_fine)
+    # ## Timeline
+    # timeline_list nimmt Datum und Beschreibungstext auf
+    del timeline_list[0]  # dort ist nur ein Dummy
+    timeline_list.sort(key=lambda tup: tup[0], reverse=True)        # sorts in place
+    
+    output = TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb)
+    for d, h in timeline_list[:16]:
+        output += h
+    output += TIMELINE_fine
+    overwrite_if_changed(c_o, tl_path, output)
 
 
 def get_side_navi(c_o, path):
@@ -182,7 +187,7 @@ def get_side_navi(c_o, path):
         
 def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
-        relpath ist der zu den Links zu addierende path, der den Ort relativ zum Verzeichnis von make_sitemap angibt.
+        relpath ist der zu den Links zu addierende path, der den Ort relativ zum Verzeichnis von make_sitemap_file angibt.
         timeline_list nimmt Datei-Datum-Pärchen auf.
         filespath ist (wenn gesetzt) der einzige Pfad, bei dem Files mit aufgeführt werden. Sonst nur Verzeichnisse.
     '''
@@ -221,34 +226,63 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     return ""
 
 
-def make_sidebar(c_o, path, do_recursive=False, talk=""):
-    ausgabe = path / '_mdm_sidebar_.html'
-    
+def make_sidebar_file(c_o, path, do_recursive=False):
+    file_path = path / '_mdm_sidebar_.html'
+    output = ""
+
     navi_content, lang, ri = get_side_navi(c_o, path)
+
+    output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb)
+    output += navi_content               # komplette Navigation
+    output += '\t<hr>\n'                 # Trennlinie
     
-    with open(ausgabe, 'w') as f:
-        
-        f.write(SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb))
-        f.write(navi_content)               # komplette Navigation
-        f.write('\t<hr>\n')                 # Trennlinie
-        
-        link_section, l_anzahl = get_links_section(path)
-        
-        f.write(link_section) 
-
-        if (link_section and ri.fixlink_section):
-            f.write('\t<hr>\n')                 # Trennlinie
-
-        f.write(ri.fixlink_section)
-
-        f.write(SIDEBAR_fine)
+    link_section, l_anzahl = get_links_section(path)
     
+    output += link_section
+
+    if (link_section and ri.fixlink_section):
+        output += '\t<hr>\n'                 # Trennlinie
+
+    output += ri.fixlink_section
+
+    output += SIDEBAR_fine
+
+    overwrite_if_changed(c_o, file_path, output)
+        
     if do_recursive:
         for subdir in path.iterdir():
             if subdir.is_dir():
-                print("recurse sidebar -> " + subdir.name)
-                make_sidebar(c_o, subdir, do_recursive, talk)
+                debug(c_o, "recurse sidebar -> " + subdir.name)
+                make_sidebar_file(c_o, subdir, do_recursive)
 
+
+def overwrite_if_changed(c_o, file_path, content):
+    """ Einige Dateien werden regelmäßig neu erstellt.
+        Wenn sie sich dabei inhaltlich nicht ändern, so erzeugt das unnötige 
+            Schreiblast auf dem Speichermedium und setzt auch das 
+            Änderungsdatum unnötig neu, was sich wiederum auf Uploads usw. auswirkt.
+        Die bestehende Datei wird daher eingelesen (meist aus dem Cache), 
+            mit dem zu schreibenden Content verglichen und 
+            nur bei einer Änderung neu geschrieben.
+        Rückgabe boolsch: True, wenn echter Schreibvorgang.
+    """
+
+    try:
+        with open(file_path, 'r') as f:
+            oldcontent = f.read()
+    except Exception:
+        oldcontent = ""
+    
+    # hier kein try, da ein Fehler unerwarted ist und durchgereicht werden soll.
+    if oldcontent != content:
+        with open(file_path, 'w') as f:
+            f.write(content)
+        debug(c_o, f"{file_path} geändert und wurde neu geschrieben")
+        return True
+    debug(c_o, f"{file_path} ist unverändert - wurde nicht überschrieben")
+    return False    
+
+        
 
 def get_title_prio_from_html(htmlfile, ersatztitel=''):
     """ Zuerst wird versucht eine gleichnamige md-Datei zu finden
@@ -317,7 +351,7 @@ def get_subdirs_section(path):
             subdirprio = 1
             subdirtitel = ""
             if (subdir / "dir_info.yaml").exists():  # Gibt es dir_info.yaml im Unterverzeichnis?
-                #  print("s "+subdir.name+" hat yaml")
+                debug(c_o, "s ", subdir.name, " hat yaml")
                 subdict = get_yaml_dict_from_yaml(subdir / "dir_info.yaml")
                 if subdict:
                     indexfilename = subdict.get("m²_indexfilename")
@@ -524,7 +558,6 @@ def get_root_info(c_o, akt_path):
     """ bekommt ein Config_Obj sowie den akt. Path und
         gibt ein RootInfo-Objekt zurück
     """
-    debug = True
     updir_count = 0
     updir_string = ""
     filename = ""
@@ -533,8 +566,7 @@ def get_root_info(c_o, akt_path):
     pathlist = []
     pathlistoutput = ""
     
-    if debug: 
-        print("ROOT-Info: START für ", akt_path)
+    debug(c_o, "ROOT-Info: START für ", akt_path)
 
     if not c_o.flag_root_exists:
         return RootInfo()
@@ -543,12 +575,10 @@ def get_root_info(c_o, akt_path):
     updir_count = 0
     while True:
         updir_string = ("../" * updir_count)[:-1]
-        if debug: 
-            print(f"Root-Info: Aktueller updir_string:'{updir_string}'")
-            print(f"ROOT-Info: Checke Verzeichnis:{(akt_path / updir_string).resolve()}")
+        debug(c_o, f"Root-Info: Aktueller updir_string:'{updir_string}'")
+        debug(c_o, f"ROOT-Info: Checke Verzeichnis:{(akt_path / updir_string).resolve()}")
         filename, foldertitle, yd = get_folder_filename_title_yaml((akt_path / updir_string).resolve())
-        if debug: 
-            print("ROOT-Info: Check-Ergebnis fn,ft: ", filename, ", ", foldertitle)
+        debug(c_o, "ROOT-Info: Check-Ergebnis fn,ft: ", filename, ", ", foldertitle)
         
         if filename:  # wenigstens wurde irgendeine Indexdatei gefunden
             pathlist.insert(0, (updir_string + "/" + filename, foldertitle))
@@ -562,8 +592,7 @@ def get_root_info(c_o, akt_path):
         updir_count += 1
 
     # Nun sind wir bei root angekommen, der erste Eintrag in pathlist ist der des root-Verzeichnisses
-    if debug: 
-        print("ROOT-Info: root erreicht: ", (akt_path / updir_string / filename).resolve())
+    debug(c_o, "ROOT-Info: root erreicht: ", (akt_path / updir_string / filename).resolve())
     
     flinks = c_o.fixlinks
     
@@ -583,8 +612,7 @@ def get_root_info(c_o, akt_path):
             pathlistoutput += SIDEBAR_li_bb[1].format("", fnam, "", "", nbs + "&#8618; " + ftit, "")
             nbs += "&numsp;&numsp;"
             
-    if debug: 
-        print("ROOT-Info: PathListOutput:\n" + pathlistoutput)
+    # debug(c_o, "ROOT-Info: PathListOutput:\n" + pathlistoutput)
     
     root_section = \
         SIDEBAR_sectionstart.format('&#8962;', "") + \
@@ -623,7 +651,7 @@ def get_folder_filename_title_yaml(folder_path):
     
     if (folder_path / folder_filename).is_file():      # muss ja irgenwann mal
         if not folder_title:  # jetzt holen wir's lieber aus der Datei; notfalls Verzeichnisname
-            folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, str(folder_path.name))
+            folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, folder_path.name)
         return folder_filename, folder_title, d_i_y_dict 
         
     return "", folder_path.name, {}  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.

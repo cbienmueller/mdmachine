@@ -18,16 +18,18 @@ from argparse import ArgumentParser
 
 # mdmaschine worx 
 import mdmwrx.tasks
-from mdmwrx.sidebar import write_demo_dir_info_yaml, make_sidebar
+from mdmwrx.sidebar import write_demo_dir_info_yaml, make_sidebar_file
 from mdmwrx.config import get_config_obj
+from mdmwrx.tools import debug
 
-# get_root_info, make_sitemap, get_folder_filename_title_yaml, \
+# get_root_info, make_sitemap_file, get_folder_filename_title_yaml, \
+
 
 # ############# #
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 0.9.30 von 2025-07-23: mit mdm_root.yaml')
+print('mdmachine Version 0.9.31 von 2025-08-01: mit overwrite_if_changed')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
@@ -42,7 +44,10 @@ config_obj = get_config_obj(startpath, medien_path)  # Klärt z.B. wo root liegt
 
 do_sidebar = False
 parser = ArgumentParser()
-                    
+
+parser.add_argument("-v", "--verbosity", dest="verbosity_flag",
+                    action="store_const", const=True, default=False,
+                    help="Setze verbosity hoch für Zusatzinfos")                    
 parser.add_argument("-f", "--force", dest="force_flag", 
                     action="store_const", const=True, default=False, 
                     help="Erzwinge Konvertierung")
@@ -77,6 +82,9 @@ mdm_args = parser.parse_args()
 sitemap_flag = False
 
 if len(sys.argv) > 1:
+    if not config_obj.flag_verbose:
+        config_obj.flag_verbose = mdm_args.verbosity_flag
+
     if mdm_args.sitemap_flag:
         mdmwrx.tasks.handle_sitemap(config_obj, startpath)
         exit()
@@ -91,14 +99,14 @@ if len(sys.argv) > 1:
         if sourcefile.is_file():
             startpath = sourcefile.parent.resolve()
             flag_is_source_file = True
-            print(f'Arbeite mit Datei-Pfad {startpath}')
+            debug(config_obj, f'Arbeite mit Datei-Pfad {startpath}')
 
         elif sourcefile.is_dir():
             startpath = sourcefile.resolve()
             if mdm_args.demo_dir_info_flag:
                 print(write_demo_dir_info_yaml(startpath) + ' geschrieben')
             else:
-                print(f'Arbeitsverzeichnis: {startpath}')
+                debug(config_obj, f'Arbeitsverzeichnis: {startpath}')
 
         else:
             continue  # was immer weder file noch dir sein soll
@@ -114,7 +122,7 @@ if len(sys.argv) > 1:
             continue
             
         if mdm_args.side_flag:
-            make_sidebar(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
+            make_sidebar_file(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
             continue
 
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück

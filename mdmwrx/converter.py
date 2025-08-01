@@ -3,6 +3,8 @@ import subprocess
 
 from pathlib import Path
 
+from mdmwrx.tools import debug
+
 """ führt die eigentlich md->html->pdf - Konvertierung durch. Ggf. doppelt, wenn auch Slides gewünscht sind.
     Dabei wird so oder so nur ein Docker-Aufruf gemacht.
 """
