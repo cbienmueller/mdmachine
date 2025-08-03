@@ -1,0 +1,12 @@
+<!-- user_demo_style.txt mit Pink -->
+<style>
+    :root {
+        --my-hue: 344;
+    }
+    body { color: #66001b;}
+    @media print {
+         #TOC {
+            background-color: #ffe6ec;
+  }
+}
+</style>

@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 # MDMWRX
-from mdmwrx.yamlread import get_yaml_dict_from_yaml
+from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_value_2_list
 # from mdmwrx.sidebar get_folder_filename_title_yaml
 # from mdmwrx.tools import debug
 
@@ -28,11 +28,12 @@ class Config_Obj:
     cssfile_md: str             # URL
     cssfile_sb: str             # URL
     mainfont: str               # URL
-    fixlinks: list[tuple]       # (URL, title)
+    fixlinks: list[tuple]       # (URL, title, hover)
+    inc_style_list: list[str]   # List of Strings als Namensbestandteile
     lang: str                   # HTML-lang-Parameter
     flag_gen_sitemap: bool      # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
     flag_gen_sidebar: bool      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
-                                #   mit html-Dateien geführt werden?
+    #                           #   mit html-Dateien geführt werden?
     flag_verbose: bool          # für Debug-Informationen
     
 
@@ -61,6 +62,7 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
                 yd.get("m²_cssfile_sb"),
                 yd.get("m²_mainfont"),
                 yd.get("m²_fixlinks"),
+                get_yaml_value_2_list(yd.get("m²_include_style")),
                 yd.get("m²_lang", "de-DE"),
                 yd.get("m²_generate_sitemap", False),
                 yd.get("m²_generate_sidebar", False),
@@ -84,6 +86,7 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
                     'https://www.bienmueller.de/css/cb_md.css',
                     'https://www.bienmueller.de/css/cb_sb.css',
                     'https://www.bienmueller.de/fonts/RadioCanadaRegular.woff2',
+                    [],
                     [],
                     "de-DE",
                     False,

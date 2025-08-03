@@ -13,11 +13,11 @@ from pathlib import Path
 
 
 from mdmwrx.pre_proc import do_pre_proc
-from mdmwrx.yamlread import get_yaml_dict_from_md 
+from mdmwrx.yamlread import get_yaml_dict_from_md, get_yaml_value_2_list
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.sidebar import get_folder_filename_title_yaml, make_sidebar_file, make_sitemap_file
 from mdmwrx.config import Config_Obj
-from mdmwrx.tools import debug
+# from mdmwrx.tools import debug
 
 
 @dataclass
@@ -228,7 +228,7 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
     if konvertierte:
         if do_sidebar or \
            c_o.flag_gen_sidebar or \
-           (path / "dir_info.yaml").exists() or \
+           (path / "mdm_dir.yaml").exists() or \
            (path / "_mdm_sidebar_.html").exists():
             make_sidebar_file(c_o, path)
         if do_recursive:
@@ -253,7 +253,7 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
     return konvertierte
 
 
-def do_poll(startpath, do_sidebar=False, do_force=False, do_recursive=False):
+def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False):
     print('Funktion: Polling')
     k = 1
     handle_dir(c_o, 
@@ -330,12 +330,13 @@ def get_meta_from_mdyaml(mdfile):
         
         # Nun eine Liste einzufügender Style-Schnipsel-Dateien
         i_s = yaml_dict.get("m²_include_style")
-        if isinstance(i_s, list):
-            mymeta.inc_style_list = [str(x).lower() for x in i_s]
-        elif i_s:
-            mymeta.inc_style_list = [str(i_s).lower()]
-        else:
-            mymeta.inc_style_list = []      # Dummywert
+        mymeta.inc_style_list = get_yaml_value_2_list(i_s)
+        # if isinstance(i_s, list):
+        #    mymeta.inc_style_list = [str(x).lower() for x in i_s]
+        # elif i_s:
+        #    mymeta.inc_style_list = [str(i_s).lower()]
+        # else:
+        #    mymeta.inc_style_list = []      # Dummywert
         
         # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
         s_f = yaml_dict.get("m²_slide_format")

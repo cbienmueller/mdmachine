@@ -21,28 +21,24 @@ def get_yaml_dict_from_md(mdfile):
         Bei Fehler: Leeres dict.
     """
     yaml_block = ''
-    yaml_dict = {}
-    reading = True
+    reading_yaml = False
+
+    # Nun eine schlichte State Machine:
     try:
         with mdfile.open() as f:
-            line = f.readline().strip()
-            # Überspringe führende (illegale) Leerzeilen:
-            while not line.strip():
-                line = f.readline()
-            
-            if line.startswith("---") or line.startswith("..."):
-                line = f.readline()
-                while reading:
-                    if line.strip() and \
-                       (line.startswith("---") or line.startswith("...")):
-                        reading = False
-                        yaml_dict = yaml.safe_load(yaml_block)
-                        break
+            for line in f:
+                if (line.startswith("---") or line.startswith("...")):
+                    if not reading_yaml:
+                        reading_yaml = True
+                    else:
+                        return yaml.safe_load(yaml_block)
+
+                elif reading_yaml: 
                     yaml_block += line
-                    line = f.readline()
     except Exception:
         pass                # nicht lesbar = nicht interessant...
-    return yaml_dict
+
+    return {}
     
     
 def get_yaml_dict_from_yaml(yamlfile):
@@ -56,4 +52,16 @@ def get_yaml_dict_from_yaml(yamlfile):
     except Exception:
         pass                # nicht lesbar = nicht interessant...
     return yaml_dict
- 
+
+
+def get_yaml_value_2_list(entry, default=[]):
+    # was immer als entry aus einem yaml-dict geliefert wurde, wird nun als Liste zurückgegeben
+        
+    if isinstance(entry, list):
+        return [str(x).lower() for x in entry]
+    elif entry:
+        return [str(entry).lower()]
+    elif isinstance(default, list):
+        return default      # Dummywert
+    else:
+        return [default]

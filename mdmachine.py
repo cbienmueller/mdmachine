@@ -18,7 +18,7 @@ from argparse import ArgumentParser
 
 # mdmaschine worx 
 import mdmwrx.tasks
-from mdmwrx.sidebar import write_demo_dir_info_yaml, make_sidebar_file
+from mdmwrx.sidebar import write_demo_mdm_dir_yaml, make_sidebar_file
 from mdmwrx.config import get_config_obj
 from mdmwrx.tools import debug
 
@@ -29,7 +29,7 @@ from mdmwrx.tools import debug
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 0.9.31 von 2025-08-01: mit overwrite_if_changed')
+print('mdmachine Version 1.0.RC1 von 2025-08-03')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
@@ -56,7 +56,7 @@ parser.add_argument("-a", "--all", dest="all_flag",
                     help="Bearbeite ganzes Verzeichnis")
 parser.add_argument("-s", "--sidebar", dest="side_flag", 
                     action="store_const", const=True, default=False, 
-                    help="Erstelle eine _mdm_sidebar_.html. Vorhandene dir_info.yaml wird ausgewertet!")
+                    help="Erstelle eine _mdm_sidebar_.html. Vorhandene mdm_dir.yaml wird ausgewertet!")
 parser.add_argument("-w", "--web", dest="web_flag", 
                     action="store_const", const=True, default=False, 
                     help="Kombiniere poll und sidebar")
@@ -72,9 +72,9 @@ parser.add_argument("-u", "--update", dest="update_flag",
 parser.add_argument("--sitemap", dest="sitemap_flag", 
                     action="store_const", const=True, default=False, 
                     help="legt sitemap.html an")
-parser.add_argument("--demodirinfo", dest="demo_dir_info_flag", 
+parser.add_argument("--demodirinfo", dest="demo_mdm_dir_flag", 
                     action="store_const", const=True, default=False, 
-                    help="Gibt eine kommentierte dir_info.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
+                    help="Gibt eine kommentierte mdm_dir.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
 parser.add_argument("file_names", type=str, nargs="*")
 
 mdm_args = parser.parse_args()
@@ -103,8 +103,8 @@ if len(sys.argv) > 1:
 
         elif sourcefile.is_dir():
             startpath = sourcefile.resolve()
-            if mdm_args.demo_dir_info_flag:
-                print(write_demo_dir_info_yaml(startpath) + ' geschrieben')
+            if mdm_args.demo_mdm_dir_flag:
+                print(write_demo_mdm_dir_yaml(startpath) + ' geschrieben')
             else:
                 debug(config_obj, f'Arbeitsverzeichnis: {startpath}')
 
@@ -126,12 +126,14 @@ if len(sys.argv) > 1:
             continue
 
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück
-            mdmwrx.tasks.do_poll(startpath,
+            mdmwrx.tasks.do_poll(config_obj, 
+                                 startpath,
                                  do_force=mdm_args.force_flag,
                                  do_recursive=mdm_args.recursive_flag)
             
         if mdm_args.web_flag:                                                                           # kommt nicht zurück
-            mdmwrx.tasks.do_poll(startpath,
+            mdmwrx.tasks.do_poll(config_obj, 
+                                 startpath,
                                  do_sidebar=True,
                                  do_force=mdm_args.force_flag,
                                  do_recursive=mdm_args.recursive_flag)
@@ -160,8 +162,8 @@ Aufruf alternativ mit...
     --force <datei.md>  Erzwingt diese Konvertierung, auch wenn Datei unverändert.
     --help              Automatisch generierte Hilfe zu den Parametern.
     --recursive         Bearbeitet auch Unterverzeichnisse
-    --demodirinfo       Gibt eine inaktive, kommentierte dir_info.yaml.blank zum Editieren aus.
-    --sitemap           Prüft ob aktuelle dir_info.yaml das flag isroot hat. 
+    --demodirinfo       Gibt eine inaktive, kommentierte mdm_dir.yaml.blank zum Editieren aus.
+    --sitemap           Prüft ob aktuelle mdm_dir.yaml das flag isroot hat. 
                         Dann erzwingt es sidebar mit recursive und 
                         legt dabei zusätzlich eine sitemap.html an.
     

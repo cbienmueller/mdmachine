@@ -3,7 +3,7 @@
         meinen Namenskonventionen
         
         eine Siedbar, mit Links zu den Dateien und Verzeichnissen.
-        Fehlt: Mehr Doku zu dir_info.yaml und Inhalten der Unterverzeichnisse.
+        Fehlt: Mehr Doku zu mdm_dir.yaml und Inhalten der Unterverzeichnisse.
 """
 from dataclasses import dataclass
 
@@ -13,8 +13,8 @@ from mdmwrx.tools import debug
 
 SB_VERBOSE = False
 
-DEMO_DIR_INFO_YAML = """
-## dir_info.yaml
+DEMO_MDM_DIR_YAML = """
+## mdm_dir.yaml
 ## Enthält 2 Informationsblöcke für die Sidebars und die sitemap
 
 ## 1. Info zu diesem Verzeichnis
@@ -132,16 +132,16 @@ TIMELINE_fine = '''
 """
 
 
-def write_demo_dir_info_yaml(path):
+def write_demo_mdm_dir_yaml(path):
     i = -1
     while i < 10:
         i += 1
-        le_path = path / ("dir_info.yaml.blank" + (str(i) if i else ""))
+        le_path = path / ("mdm_dir.yaml.blank" + (str(i) if i else ""))
         # print(le_path)
         if not le_path.is_file():
             i = 99
     with open(le_path, 'w') as f:
-        f.write(DEMO_DIR_INFO_YAML)
+        f.write(DEMO_MDM_DIR_YAML)
     return str(le_path)
         
 
@@ -154,7 +154,7 @@ def make_sitemap_file(c_o, root_path):
     # ## Dateistart sitemap
     content = get_folderinfo4sitemap(root_path, "", timeline_list)  
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
-    # lang kommt nur vom root-dir_info.yaml
+    # lang kommt nur vom root-mdm_dir.yaml
     
     output = SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb)
     output += content
@@ -179,7 +179,7 @@ def get_side_navi(c_o, path):
     lang = ri.lang
     content = get_folderinfo4sitemap(ri.root_path, ri.updir_string, timeline_list_dummy, path)
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
-    # lang kommt nur vom root-dir_info.yaml
+    # lang kommt nur vom root-mdm_dir.yaml
     # timeline_list nimmt Datum und Beschreibungstext auf
     # Enthält nur im aktpath die Dateien
     return content, lang, ri
@@ -213,7 +213,8 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
         smf_sub_output = ""
         for subdir in root_path.iterdir():
             if subdir.is_dir():
-                print("sitemap: recurse into -> " + subdir.name)
+                if SB_VERBOSE:
+                    print("sitemap: recurse into -> " + subdir.name)
                 content = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
                 smf_sub_output += content
         if smf_sub_output:
@@ -281,7 +282,6 @@ def overwrite_if_changed(c_o, file_path, content):
         return True
     debug(c_o, f"{file_path} ist unverändert - wurde nicht überschrieben")
     return False    
-
         
 
 def get_title_prio_from_html(htmlfile, ersatztitel=''):
@@ -350,9 +350,9 @@ def get_subdirs_section(path):
             indexfilename = ""
             subdirprio = 1
             subdirtitel = ""
-            if (subdir / "dir_info.yaml").exists():  # Gibt es dir_info.yaml im Unterverzeichnis?
+            if (subdir / "mdm_dir.yaml").exists():  # Gibt es mdm_dir.yaml im Unterverzeichnis?
                 debug(c_o, "s ", subdir.name, " hat yaml")
-                subdict = get_yaml_dict_from_yaml(subdir / "dir_info.yaml")
+                subdict = get_yaml_dict_from_yaml(subdir / "mdm_dir.yaml")
                 if subdict:
                     indexfilename = subdict.get("m²_indexfilename")
                     if indexfilename:
@@ -406,7 +406,7 @@ def get_parent_section(path):
         
 def get_links_section(path):
     
-    d_i_y = path / 'dir_info.yaml'
+    d_i_y = path / 'mdm_dir.yaml'
     l_r_output = ''
     l_anzahl = 0
     if d_i_y.is_file():
@@ -633,7 +633,7 @@ def get_folder_filename_title_yaml(folder_path):
         * Strings sind leer, wenn keine Datei gefunden wurde
     """
     # Vorbereitung
-    d_i_y = folder_path / 'dir_info.yaml'
+    d_i_y = folder_path / 'mdm_dir.yaml'
     # print("Lese Folder-Info von ", d_i_y)
     folder_title = ''
     folder_filename = ''

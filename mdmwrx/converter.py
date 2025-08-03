@@ -171,7 +171,19 @@ def call_my_script(cd):
     if errfiltered:
         print("\nstderr:\n" + errfiltered)
     
-    
+
+def get_inc_style_filename(cd, inc_style):
+    """ Schaut ob eine geeignete Datei im Medienverzeichnis von mdmachine zu finden ist.
+    """
+    save_style = "".join(x for x in inc_style if (x.isalnum() or x in "_-"))
+    for prefix in ["", "user_"]:
+        realpath = cd.c_o.medien_path / f'{prefix}{save_style}_style.txt'
+        if realpath.is_file():
+            return (f'/opt/medien/{prefix}{save_style}_style.txt')
+    print(f'Fehler: der includierte Style {inc_style} wurde nicht als Datei{str(realpath)} gefunden.')
+    return ""
+
+
 def convert2html(cd):
     """Konvertiere eine von pre_proc generierte Markdowndatei in ggf. mehrere HTML-Dateien.
         - mymeta.gen_slides entscheidet, ob überhaupt weitere HTML-Dateien für SLIDES erzeugt werden
@@ -180,10 +192,11 @@ def convert2html(cd):
     print(f'''Konvertiere '{cd.mymeta.title}' nun in HTML {", auch für Slides" if cd.mymeta.gen_slides_flag else ""}''')
 
     inc_liste = []
-    if cd.mymeta.inc_style_list:
-        for inc_style in cd.mymeta.inc_style_list:
-            inc_style_filename = INCLUDE_STYLE.get(inc_style)
-            print("inc_style_filename = ", inc_style_filename)
+    style_list = cd.c_o.inc_style_list + cd.mymeta.inc_style_list
+    if style_list:
+        for inc_style in style_list:
+            inc_style_filename = get_inc_style_filename(cd, inc_style)
+            debug(cd.c_o, "inc_style_filename", inc_style_filename)
             if inc_style_filename:
                 inc_liste += ['-A', inc_style_filename]
     
