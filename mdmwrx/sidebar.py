@@ -13,47 +13,6 @@ from mdmwrx.tools import debug
 
 SB_VERBOSE = False
 
-DEMO_MDM_DIR_YAML = """
-## mdm_dir.yaml
-## Enthält 2 Informationsblöcke für die Sidebars und die sitemap
-
-## 1. Info zu diesem Verzeichnis
-##      Wird für sidebar des Elternverzeichnisses oder als root in Kindverzeichnissen ausgewertet
-##
-##      indexfilename: xyz.html
-##          als Alternative zur index.html
-##
-#m²_indexfilename: demo.html
-##
-##      overridetitle: Demoinhalte
-##          Eigentlich sollte der Verzeichnistitel der Datei indexfilename entnommen werden.
-##          Dies kann hier übersteuert werden (kann inkonsistent wirken)
-#m²_overridetitle: Demoinhalte
-##
-##      subdirprio: High oder Low
-##          Wird damit in der sidebar des übergeordneten Verzeichnisses einsortiert.
-##          Dort werden High/normal/Low in drei Blöcken, jeweils in sich alphabetisch sortiert
-##          angeordnet im Format Fett/normal/kursiv.
-#m²_subdirprio: Low
-##      
-
-## 2. Linklisten
-##      links ist ein array of dicts (welche link, title und hover als keys enthalten).
-##          * Die Links werden am Ende der Sidebar als einzelne Links aufgeführt.
-##          * title ist der Anzeigename
-##          * hover wird angezeigt, wenn die Maus über den Link gleitet.
-##          Sichtbarkeit: Sie sind also neben jeder Seite dieses Verzeichnisses sichtbar
-##          Anzahl: Kein Limit...
-##
-#m²_links:
-#    - link:  'http://example.com'
-#      title: 'Example-homepage'
-#    - link:  'https://www.google.com'
-#      title: 'Let's Search something'
-#      hover: 'go to google'
-##
-"""
-
 FILE_barebone = """<!DOCTYPE html>
 <html lang="{}">
 <head>
@@ -131,19 +90,6 @@ TIMELINE_fine = '''
         }
 """
 
-
-def write_demo_mdm_dir_yaml(path):
-    i = -1
-    while i < 10:
-        i += 1
-        le_path = path / ("mdm_dir.yaml.blank" + (str(i) if i else ""))
-        # print(le_path)
-        if not le_path.is_file():
-            i = 99
-    with open(le_path, 'w') as f:
-        f.write(DEMO_MDM_DIR_YAML)
-    return str(le_path)
-        
 
 def make_sitemap_file(c_o, root_path):
     sm_path = root_path / 'sitemap.html'
@@ -655,4 +601,4 @@ def get_folder_filename_title_yaml(folder_path):
         return folder_filename, folder_title, d_i_y_dict 
         
     return "", folder_path.name, {}  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
-    
+

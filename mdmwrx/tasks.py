@@ -194,14 +194,6 @@ def handle_update(c_o, path, force_flag, poll_flag):
                     exit()
         
     
-def handle_sitemap(c_o, path):
-    if not c_o.flag_dir_is_root:
-        print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
-              'Daher wird keine sitemap erstellt.\n')
-        exit()
-    make_sitemap_file(c_o, path)
-    
-    
 def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
                indent="", be_quiet=False):
     konvertierte = 0

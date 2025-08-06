@@ -18,9 +18,9 @@ from argparse import ArgumentParser
 
 # mdmaschine worx 
 import mdmwrx.tasks
-from mdmwrx.sidebar import write_demo_mdm_dir_yaml, make_sidebar_file
+from mdmwrx.sidebar import make_sidebar_file
 from mdmwrx.config import get_config_obj
-from mdmwrx.tools import debug
+from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yaml
 
 # get_root_info, make_sitemap_file, get_folder_filename_title_yaml, \
 
@@ -29,7 +29,7 @@ from mdmwrx.tools import debug
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.RC1 von 2025-08-03')
+print('mdmachine Version 1.0.RC1b von 2025-08-06')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
@@ -57,9 +57,6 @@ parser.add_argument("-a", "--all", dest="all_flag",
 parser.add_argument("-s", "--sidebar", dest="side_flag", 
                     action="store_const", const=True, default=False, 
                     help="Erstelle eine _mdm_sidebar_.html. Vorhandene mdm_dir.yaml wird ausgewertet!")
-parser.add_argument("-w", "--web", dest="web_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Kombiniere poll und sidebar")
 parser.add_argument("-p", "--poll", dest="poll_flag", 
                     action="store_const", const=True, default=False, 
                     help="Überprüfe Verzeichnis fortlaufend auf Änderungen")
@@ -68,27 +65,22 @@ parser.add_argument("-r", "--recursive", dest="recursive_flag",
                     help="mit Unterverzeichnissen")
 parser.add_argument("-u", "--update", dest="update_flag", 
                     action="store_const", const=True, default=False, 
-                    help="update whole directory tree: Markdown files, sidebars and sitemap")
-parser.add_argument("--sitemap", dest="sitemap_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="legt sitemap.html an")
-parser.add_argument("--demodirinfo", dest="demo_mdm_dir_flag", 
+                    help="Update für den ganzen Verzeichnisbaum ab `root`:"
+                         " Konvertiere alle geänderten md-Dateien, erzeuge sidebars und eine sitemap")
+parser.add_argument("--demo_mdm_dir", dest="demo_mdm_dir_flag", 
                     action="store_const", const=True, default=False, 
                     help="Gibt eine kommentierte mdm_dir.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
+parser.add_argument("--demo_mdm_root", dest="demo_mdm_root_flag", 
+                    action="store_const", const=True, default=False, 
+                    help="Gibt eine kommentierte mdm_root.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
 parser.add_argument("file_names", type=str, nargs="*")
 
 mdm_args = parser.parse_args()
-
-sitemap_flag = False
 
 if len(sys.argv) > 1:
     if not config_obj.flag_verbose:
         config_obj.flag_verbose = mdm_args.verbosity_flag
 
-    if mdm_args.sitemap_flag:
-        mdmwrx.tasks.handle_sitemap(config_obj, startpath)
-        exit()
-        
     for file_name in (mdm_args.file_names if mdm_args.file_names else ['.']):
         flag_is_source_file = False
         sourcefile = Path(file_name).resolve()
@@ -105,6 +97,8 @@ if len(sys.argv) > 1:
             startpath = sourcefile.resolve()
             if mdm_args.demo_mdm_dir_flag:
                 print(write_demo_mdm_dir_yaml(startpath) + ' geschrieben')
+            elif mdm_args.demo_mdm_root_flag:
+                print(write_demo_mdm_root_yaml(startpath) + ' geschrieben')
             else:
                 debug(config_obj, f'Arbeitsverzeichnis: {startpath}')
 
@@ -128,13 +122,6 @@ if len(sys.argv) > 1:
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück
             mdmwrx.tasks.do_poll(config_obj, 
                                  startpath,
-                                 do_force=mdm_args.force_flag,
-                                 do_recursive=mdm_args.recursive_flag)
-            
-        if mdm_args.web_flag:                                                                           # kommt nicht zurück
-            mdmwrx.tasks.do_poll(config_obj, 
-                                 startpath,
-                                 do_sidebar=True,
                                  do_force=mdm_args.force_flag,
                                  do_recursive=mdm_args.recursive_flag)
             
