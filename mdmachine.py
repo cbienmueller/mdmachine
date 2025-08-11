@@ -2,14 +2,15 @@
 
 """ mdmachine
     Konvertiert Markdown-Dateien mit Docker in html und PDF
-    Genutzt werden derzeit (2025-06-29)
-        + pandoc via Docker
-        + google chrome, Java, Python als Apps 
+    Genutzt werden derzeit (2025-08-09)
+        + pandoc lokal installiert (per Parameter auch per Docker)
+        + google chrome lokal installiert 
+        + Java, Python als Apps 
         + lokal: Dateien zur Anreicherung von HTML
-        + online: meine CSS-Dateien und Fonts
-    Viele Funktionen sind in das package mdmwrx ausgelagert.
-    
+        + online: meine oder deine CSS-Dateien und Fonts
+    Die eigentlichen Funktionen sind in das package mdmwrx ausgelagert.
 """
+
 # Batteries included
 import sys
 
@@ -29,7 +30,7 @@ from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yam
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.RC1b von 2025-08-06')
+print('mdmachine Version 1.0.RC2 von 2025-08-09')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
@@ -139,20 +140,19 @@ konvertiert Markdown-Datei(en)
     * und biec-Customizing (CSS)
     * via pandoc in HTML und 
     * via Chrome in Din-A4-PDF, wenn die md-Datei neuer als die HTML-Zieldatei ist.
-    * Mit m²_generate_slides in YAML wird zusätzlich ein SLIDES-PDF erzeugt.
+    * Mit m²_generate_slides im YAML-Block wird zusätzlich ein SLIDES-PDF erzeugt.
 Aufruf alternativ mit...
     --all               Zum einmaligen Konvertieren aller Dateien des akt. Verzeichnisses.
     --poll              Für dauerhaftes Polling des akt. Verzeichnisses.*
     --sidebar           Zum Erzeugen einer neuen _mdm_sidebar_.html.
-    --web               Kombiniert --poll mit --sidebar (letzteres nur nach erfolgter Konvertierung).*
     <datei.md>          Zum Konvertieren genau einer Quell-Datei.
     --force <datei.md>  Erzwingt diese Konvertierung, auch wenn Datei unverändert.
     --help              Automatisch generierte Hilfe zu den Parametern.
     --recursive         Bearbeitet auch Unterverzeichnisse
     --demodirinfo       Gibt eine inaktive, kommentierte mdm_dir.yaml.blank zum Editieren aus.
-    --sitemap           Prüft ob aktuelle mdm_dir.yaml das flag isroot hat. 
-                        Dann erzwingt es sidebar mit recursive und 
-                        legt dabei zusätzlich eine sitemap.html an.
+    --update            Prüft ob im aktuellen Verzeichnis mdm_root.yaml steht.
+                        Wenn ja, wird der ganze Verzeichnisbaum ab hier nach unten
+                        konvertiert, sidebars und ggf. eine sitemap angelegt.
     
     *   Verzeichnisbearbeitung mit polling ohne Unterverzeichnisse. 
         _dateiname_.md wird immer übersprungen (gut für reine include-Dateien) wenn nicht explizit aufgerufen.
@@ -160,5 +160,6 @@ Aufruf alternativ mit...
 DryRun ("was wäre wenn") im Verzeichnis\n    {startpath}:
     ''')
     mdmwrx.tasks.handle_dir(config_obj, startpath, dryrun=True)
-    print("Keine Konvertierung wurde durchgeführt, da kein Parameter angegeben wurde.")
+    print("Es wurde keine Konvertierung durchgeführt, da kein Parameter angegeben wurde.")
     
+ 

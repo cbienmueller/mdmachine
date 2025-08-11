@@ -2,7 +2,7 @@
 <!-- css_fhd_slides.txt -->
 <style>
     @page {                         /* Seite festlegen */
-        size: 25.77cm 14.5cm;       /* Für fhd (FullHD, 16:9) */ 
+        size: 25.77cm 14.5cm;       /* Für fhd (FullHD und HDready 16:9) */ 
         margin-left: 1cm;
         margin-right: 1cm;
 

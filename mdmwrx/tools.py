@@ -71,52 +71,58 @@ DEMO_MDM_ROOT_YAML = """
 ## Enthält Informationen für den gesamten Verzeichnisbaum, beginnend mit dem Verzeichnis, in dem die Datei liegt.
 ## Es handelt sich quasi um die Konfigurationsdatei der mdmachine.
 ## 
-## Beispielinhalte sind einfach auskommentiert.
+## Beispielinhalte sind einfach auskommentiert, da es die Standardwerte sind.
 ##
 ## 1. Klassisches Customizing
 ##
 ##      m²_lang: Sprachstring
 ##          welche Sprache soll als HTML lang Wert gesetzt werden.
 ##          Wert im Markdown-YAML-Block überschreibt dies.
-m²_lang: "de-DE"
+#m²_lang: "de-DE"
 
 ## 1.2. Liste von einzubindenden Dateien
 ##      Hier nur nach Zweck unterschieden. Wenn weitere benötigt werden, dann mit @include einbinden
 ##
 ##      Für jede HTML-Datei
-m²_cssfile_main: 'https://www.bienmueller.de/css/cb.css'
+#m²_cssfile_main: 'https://www.bienmueller.de/css/mdm_main.css'
 ##      Für aus md generierte zusätzlich zu main
-m²_cssfile_md: 'https://www.bienmueller.de/css/cb_md.css'
+#m²_cssfile_md: 'https://www.bienmueller.de/css/mdm_md.css'
 ##      Für in mdmachine generierte (Sidebar, Sitemap) zusätzlich zu main
-m²_cssfile_sb: 'https://www.bienmueller.de/css/cb_sb.css'
+#m²_cssfile_sb: 'https://www.bienmueller.de/css/mdm_sb.css'
 
-## Der wichtigste Font (im woff2-Format), der vorab geladen werden soll
-m²_mainfont: 'https://www.bienmueller.de/fonts/RadioCanadaRegular.woff2'
+##      Der wichtigste Font (im woff2-Format), der vorab geladen werden soll
+#m²_mainfont: 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'
 
-## Eine Liste von in allen Markdowndateien einzubindende Styles
-#m²_include_style: demo
-#m²_include_style: [demo, schule]
+##      Eine Liste von in allen Markdowndateien einzubindende Styles
+##          Beispiele (Standard: nichts):
+##          Ein Style:
+## m²_include_style: demo
+##          Array of Styles:
+## m²_include_style: [demo, schule]
 
 ## 2. Fix-Link-Liste
-##    Diese Links werden in jede Sidebar übernommen, sind also überall präsent
-m²_fixlinks:
-    - link: 'https://bienmueller.de'
-      title: 'Homepage C.B.'
-    - link: 'https://tabula.info'
-      title: 'Public Displays'
+##    Diese Links werden in jede Sidebar übernommen, sind also überall präsent.
+##    Hier nur ein Beispiel mit zwei Links, da der Standardwert leer ist:
+## m²_fixlinks:
+##    - link: 'https://bienmueller.de'
+##      title: 'Homepage C.B.'
+##    - link: 'https://tabula.info'
+##      title: 'Public Displays'
+##      hover: Klick mich!
       
     
 ## 3. Flags 
 ##
 ## Soll im root-Verzeichenis ("hier") eine sitemap.html erzeugt werden?
-m²_generate_sitemap: True
+# m²_generate_sitemap: False
 
 ## 
 """
 
+
 def write_demo_mdm_root_yaml(path):
     le_path = path / "mdm_root.yaml.blank"
     with open(le_path, 'w') as f:
-        f.write(DEMO_MDM_DIR_YAML)
+        f.write(DEMO_MDM_ROOT_YAML)
     return str(le_path)
         

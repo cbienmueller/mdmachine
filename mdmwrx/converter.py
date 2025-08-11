@@ -17,9 +17,9 @@ conv_verbose = True
 
 # SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
 SLIDE_FORMATE = {
-    "gen8": '/opt/medien/css_gen8_slides.txt',
-    "beamer": '/opt/medien/css_beamer_slides.txt',
-    "fhd": '/opt/medien/css_fhd_slides.txt',
+    "gen8": 'css_gen8_slides.txt',
+    "beamer": 'css_beamer_slides.txt',
+    "fhd": 'css_fhd_slides.txt',
     'a5': ''}
 
 SLIDE_FORMAT_DESC = {
@@ -29,8 +29,8 @@ SLIDE_FORMAT_DESC = {
     'a5': 'Din-A5 quer, iPad Air 5'}
 
 INCLUDE_STYLE = {
-    "schule": '/opt/medien/schule_style.txt', 
-    "orange": '/opt/medien/orange_style.txt', 
+    "schule": 'schule_style.txt', 
+    "orange": 'orange_style.txt', 
 }
 
 DYN_HEADER = """<!-- Dyn_header.txt: Wird je nach Konfig. erstellt, benutzt, gelöscht -->
@@ -168,6 +168,8 @@ def call_my_script(cd):
         print("\nstdout:\n" + out.decode('utf-8'))
     if err:
         errfiltered = filtererrors(err.decode('utf-8'))
+    else:
+        errfiltered = ""
     if errfiltered:
         print("\nstderr:\n" + errfiltered)
     
@@ -179,7 +181,7 @@ def get_inc_style_filename(cd, inc_style):
     for prefix in ["", "user_"]:
         realpath = cd.c_o.medien_path / f'{prefix}{save_style}_style.txt'
         if realpath.is_file():
-            return (f'/opt/medien/{prefix}{save_style}_style.txt')
+            return (f'{prefix}{save_style}_style.txt')
     print(f'Fehler: der includierte Style {inc_style} wurde nicht als Datei{str(realpath)} gefunden.')
     return ""
 
@@ -191,6 +193,9 @@ def convert2html(cd):
     """
     print(f'''Konvertiere '{cd.mymeta.title}' nun in HTML {", auch für Slides" if cd.mymeta.gen_slides_flag else ""}''')
 
+    USE_DOCKER = False
+    medienurl = '/opt/medien' if USE_DOCKER else str(cd.c_o.medien_path)
+    
     inc_liste = []
     style_list = cd.c_o.inc_style_list + cd.mymeta.inc_style_list
     if style_list:
@@ -198,16 +203,19 @@ def convert2html(cd):
             inc_style_filename = get_inc_style_filename(cd, inc_style)
             debug(cd.c_o, "inc_style_filename", inc_style_filename)
             if inc_style_filename:
-                inc_liste += ['-A', inc_style_filename]
+                inc_liste += ['-A', f'{medienurl}/{inc_style_filename}']
     
-    html_todo_base = [                                      # Anfang der Liste der Parameter um HTML zu erzeugen
+    # Anfang der Liste der Parameter um HTML zu erzeugen
+    html_todo_base = [                                      
         'pandoc', 
         '-s']                                               # pandoc soll stand-alone erzeugen (mit header, body usw.)
         
+    # Titel aus dem Dateinamen bilden wenn kein Titel im Source-md enthalten ist
     if cd.mymeta.force_title:
         html_todo_base += [
-            '--metadata', f'pagetitle="{cd.mymeta.title}"']  # Titel aus dem Dateinamen wenn nicht im Source-md enthalten.
+            '--metadata', f'pagetitle="{cd.mymeta.title}"']  
 
+    # Einzubindende CSS-Dateien sind nicht mehr hart verdrahtet, sondern werden ggf. mdm_root.yaml entnommen
     with open((cd.aktpath / f'{cd.tmp_filestem}_header.txt'), 'w') as f:
         f.write(DYN_HEADER.format(cd.c_o.mainfont,
                                   cd.c_o.cssfile_main,
@@ -217,15 +225,15 @@ def convert2html(cd):
         '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen
         '--toc', '--toc-depth=2',                           # Regeln für Inhaltsverzeichnis
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
-        '-H', f'{cd.tmp_filestem}_header.txt',              # mit ggf. anderen CSS-Datei-URLs usw.
-        '-H', '/opt/medien/mdm_header.txt',                 # füge script und css-Links in den header ein
+        '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
+        '-H', f'{medienurl}/mdm_header.txt',                 # füge script und css-Links in den header ein
         '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
         inc_liste
     
     html_todo = html_todo_base + [
         '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
-        '-A', '/opt/medien/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein
+        '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein
         f'{cd.tmp_filestem}_preproc.md']                   # temporäre Eingabedatei nach Präprozessing
     
     slides_todo = []                                    # Liste der Parameter um HTML-Slides zu erzeugen
@@ -236,7 +244,7 @@ def convert2html(cd):
             # print ("slide_format_filename = ", slide_format_filename)
             if slide_format_filename:
                 additional_stylefile = [
-                    '-A', slide_format_filename
+                    '-A', f'{medienurl}/{slide_format_filename}'
                 ]
                 s_format_ext = "_" + s_format  # für Dateinamen
             else:
@@ -245,26 +253,32 @@ def convert2html(cd):
                 
             slides_todo += [
                 '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html',        # andere Zieldatei
-                '-A', '/opt/medien/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
+                '-A', f'{medienurl}/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
                 
             slides_todo += additional_stylefile + [
-                '-A', '/opt/medien/mdm_footer_slides.txt',          # füge HTML am Ende des Bodys ein
+                '-A', f'{medienurl}/mdm_footer_slides.txt',          # füge HTML am Ende des Bodys ein
                 f'{cd.tmp_filestem}_preproc.md',               # temporäre Eingabedatei nach Präprozessing
                 '\n'] 
 
     with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
-        f.write('# Shellskript, das im dockercontainer ausgeführt wird\n'
-                'export XDG_CONFIG_HOME=/tmp/m³_config\n'
-                'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-        f.write("echo Convert to html...\n")
+        if USE_DOCKER:
+            f.write('# Shellskript, das im dockercontainer ausgeführt wird\n'
+                    'export XDG_CONFIG_HOME=/tmp/m²_config\n'
+                    'export XDG_CACHE_HOME=/tmp/m²_cache\n')
+        else:
+            f.write('# Shellskript, das direkt ausgeführt wird\n')
+        f.write('echo Starting "Convert to html"\n')
         f.write(" ".join(html_todo))
         f.write("\n")
         f.write(" ".join(slides_todo))
         f.write("\n")
-        f.write("echo Finished HTML\n")
+        f.write('echo Finished "Convert to HTML"\n')
             
-    call_my_docker(cd) 
-    
+    if USE_DOCKER:
+        call_my_docker(cd) 
+    else:
+        call_my_script(cd)
+        
     if not (cd.aktpath / f'{cd.tmp_filestem}.html').exists():
         print(f'ERROR & Abbruch! Zieldatei {cd.tmp_filestem}.html nicht gefunden')
         return False
@@ -288,8 +302,10 @@ def convert2A4pdf(cd):
         f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                 'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                 'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-        f.write("echo Convert to A4.pdf...\n")
+        f.write('echo Starting Convert to A4.pdf\n')
         f.write(" ".join(dotodo_go))
+        f.write("\n")
+        f.write('echo Finished Convert to A4.pdf\n')
         f.write("\n")
 
     # call_my_docker(cd)
@@ -325,10 +341,10 @@ def convert2slides(cd):
             f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                     'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                     'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-            f.write(f"echo Convert to SLIDE{s_format_ext}.pdf...\n")
+            f.write(f'echo Starting "Convert to SLIDE{s_format_ext}.pdf"\n')
             f.write(" ".join(slides_todo))
             f.write("\n")
-            f.write("echo Finished a SLIDE.pdf\n")
+            f.write(f'echo Finished "Convert to SLIDE{s_format_ext}.pdf"\n')
             
         call_my_script(cd)
         

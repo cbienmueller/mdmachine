@@ -15,7 +15,7 @@ from pathlib import Path
 from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md, get_yaml_value_2_list
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
-from mdmwrx.sidebar import get_folder_filename_title_yaml, make_sidebar_file, make_sitemap_file
+from mdmwrx.sidebar import make_sidebar_file, make_sitemap_file
 from mdmwrx.config import Config_Obj
 # from mdmwrx.tools import debug
 
@@ -167,14 +167,21 @@ def handle_update(c_o, path, force_flag, poll_flag):
         print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
               'Daher wird kein Komplett-Update durchgeführt.')
         exit()
+        
     print("Schritt 1:\n\tRekursiv alle Markdowndateien prüfen/ggf. konvertieren\n")
     handle_dir(c_o, path, do_print=False,
                do_sidebar=True, do_force=force_flag,
                do_recursive=True)
+               
     print("Schritt 2:\n\tsidebars rekursiv erzeugen")
     make_sidebar_file(c_o, path, do_recursive=True)
-    print("Schritt 3:\n\tsitemap.html erstellen\n")
-    make_sitemap_file(c_o, path)
+    
+    if c_o.flag_gen_sitemap:
+        print("Schritt 3:\n\tsitemap.html erstellen\n")
+        make_sitemap_file(c_o, path)
+    else:
+        print("Schritt 3:\n\tsitemap.html erstellen ENTFÄLLT, da m²_generate_sitemap in mdm_root.yaml nicht gesetzt!\n")
+        
     print("Fertig zum Upload!")
     if poll_flag:
         print("\nGewählte Funktion: Polling - überprüft still gesamten Dokumentenbaum alle 5 Sekunden bis zu CTRL-C!\n")
@@ -182,7 +189,7 @@ def handle_update(c_o, path, force_flag, poll_flag):
             konvertierte = handle_dir(c_o, path, do_print=False,
                                       do_sidebar=True, do_force=False,
                                       do_recursive=True, be_quiet=True)
-            if konvertierte:
+            if konvertierte and c_o.flag_gen_sitemap:
                 print("Folgeaufgabe wg. Konvertierung: sitemap.html erstellen\n")
                 make_sitemap_file(c_o, path)
                 print("Nun wieder stilles Polling")
@@ -267,12 +274,6 @@ def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False
                 exit()
         k = handle_dir(c_o, startpath, do_print=False, do_sidebar=do_sidebar, do_recursive=do_recursive, be_quiet=True)   
         # hier kein do_force mehr, dafür immer quiet durch die Verzeichnisse...
-
-
-def check_if_path_is_root(path):
-    _, _, yd = get_folder_filename_title_yaml(path)
-    isrootflag = yd.get("m²_isroot")
-    return isrootflag
 
 
 def alte_Dateien_entfernen(path):

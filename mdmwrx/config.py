@@ -34,7 +34,7 @@ class Config_Obj:
     flag_gen_sitemap: bool      # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
     flag_gen_sidebar: bool      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
     #                           #   mit html-Dateien geführt werden?
-    flag_verbose: bool          # für Debug-Informationen
+    flag_verbose: bool          # für Ausgabe von Debug-Informationen
     
 
 def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
@@ -82,10 +82,10 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
                     0,
                     False,
                     False,
-                    'https://www.bienmueller.de/css/cb.css',
-                    'https://www.bienmueller.de/css/cb_md.css',
-                    'https://www.bienmueller.de/css/cb_sb.css',
-                    'https://www.bienmueller.de/fonts/RadioCanadaRegular.woff2',
+                    'https://www.bienmueller.de/css/mdm_main.css',
+                    'https://www.bienmueller.de/css/mdm_md.css',
+                    'https://www.bienmueller.de/css/mdm_sb.css',
+                    'https://www.bienmueller.de/fonts/OpenSansRegular.woff2',
                     [],
                     [],
                     "de-DE",
