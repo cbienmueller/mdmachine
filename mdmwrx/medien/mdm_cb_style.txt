@@ -1,0 +1,9 @@
+
+<!-- mdm_cb_style.txt -->
+<div id="footer" alt="Biene als Logo" style="text-align:right;">
+    <a href="https://www.bienmueller.de" class="no_link_expansion">
+        Christian Bienmüller
+        <img class="cb-biene" />
+    </a>
+</div>
+

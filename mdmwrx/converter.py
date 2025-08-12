@@ -174,14 +174,14 @@ def call_my_script(cd):
         print("\nstderr:\n" + errfiltered)
     
 
-def get_inc_style_filename(cd, inc_style):
+def get_inc_txt_filename(cd, inc_name, inc_type):
     """ Schaut ob eine geeignete Datei im Medienverzeichnis von mdmachine zu finden ist.
     """
-    save_style = "".join(x for x in inc_style if (x.isalnum() or x in "_-"))
-    for prefix in ["", "user_"]:
-        realpath = cd.c_o.medien_path / f'{prefix}{save_style}_style.txt'
+    save_name = "".join(x for x in inc_name if (x.isalnum() or x in "_-"))
+    for prefix in ["mdm", "user"]:
+        realpath = cd.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
         if realpath.is_file():
-            return (f'{prefix}{save_style}_style.txt')
+            return (f'{prefix}_{save_name}_{inc_type}.txt')
     print(f'Fehler: der includierte Style {inc_style} wurde nicht als Datei{str(realpath)} gefunden.')
     return ""
 
@@ -196,14 +196,20 @@ def convert2html(cd):
     USE_DOCKER = False
     medienurl = '/opt/medien' if USE_DOCKER else str(cd.c_o.medien_path)
     
-    inc_liste = []
-    style_list = cd.c_o.inc_style_list + cd.mymeta.inc_style_list
-    if style_list:
-        for inc_style in style_list:
-            inc_style_filename = get_inc_style_filename(cd, inc_style)
-            debug(cd.c_o, "inc_style_filename", inc_style_filename)
+    style_files_list = []
+    style_slides_files_list = []
+    style_list = ['master'] + cd.c_o.inc_style_list + cd.mymeta.inc_style_list
+    for inc_style in style_list:
+        inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style')
+        debug(cd.c_o, "inc_style_filename", inc_style_filename)
+        if inc_style_filename:
+            style_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
+        
+        if cd.mymeta.gen_slides_flag:
+            inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style_slides')
+            debug(cd.c_o, "inc_style_slides_filename", inc_style_filename)
             if inc_style_filename:
-                inc_liste += ['-A', f'{medienurl}/{inc_style_filename}']
+                style_slides_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
     
     # Anfang der Liste der Parameter um HTML zu erzeugen
     html_todo_base = [                                      
@@ -226,15 +232,15 @@ def convert2html(cd):
         '--toc', '--toc-depth=2',                           # Regeln für Inhaltsverzeichnis
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
         '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
-        '-H', f'{medienurl}/mdm_header.txt',                 # füge script und css-Links in den header ein
         '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
-        inc_liste
-    
+        style_files_list
+    # '-H', f'{medienurl}/mdm_header.txt',                 # füge script und css-Links in den header ein
     html_todo = html_todo_base + [
         '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
-        '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein
         f'{cd.tmp_filestem}_preproc.md']                   # temporäre Eingabedatei nach Präprozessing
+
+    # '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein    
     
     slides_todo = []                                    # Liste der Parameter um HTML-Slides zu erzeugen
     if cd.mymeta.gen_slides_flag:
@@ -252,13 +258,14 @@ def convert2html(cd):
                 s_format_ext = "_a5"
                 
             slides_todo += [
-                '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html',        # andere Zieldatei
-                '-A', f'{medienurl}/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
-                
+                '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html']        # andere Zieldatei
+            #    '-A', f'{medienurl}/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
+            slides_todo += style_slides_files_list              # Userstyles für slides    
             slides_todo += additional_stylefile + [
-                '-A', f'{medienurl}/mdm_footer_slides.txt',          # füge HTML am Ende des Bodys ein
-                f'{cd.tmp_filestem}_preproc.md',               # temporäre Eingabedatei nach Präprozessing
+                f'{cd.tmp_filestem}_preproc.md',                # temporäre Eingabedatei nach Präprozessing
                 '\n'] 
+
+            # '-A', f'{medienurl}/mdm_footer_slides.txt',     # füge HTML am Ende des Bodys ein
 
     with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
         if USE_DOCKER:

@@ -1,5 +1,5 @@
 
-<!-- mdm_css_slides.txt -->
+<!-- mdm_master_style_slides.txt -->
 <style>
     /* ********************************************** *
      * Stile, die Präsentationsslides in PDF erzeugen *

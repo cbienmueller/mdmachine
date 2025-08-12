@@ -1,7 +1,8 @@
 
-<!-- mdm_header.txt -->
+<!-- mdm_master_style.txt -->
 
 <script>    /* Mini-Javascript um die Sidebar nachzuladen oder das div auszublenden 8. Sept. 2024 */
+
     function create_sidebar() { 
           window.addEventListener(
             "message",
@@ -32,6 +33,16 @@
         var sbwindow = document.getElementById("SBIframe").contentWindow;
         sbwindow.postMessage(titletext, "*");
     }
+    
+	/* Binde nach 0.2 Sekunden eine eventuelle sidebar ein */
+    setTimeout(
+        function() {
+                create_sidebar(); 
+            },
+        200);
+        
+    /* Gib allen externen Links das Target "_blank", also neuen Tab */
+    document.querySelectorAll('a[href^="http"]').forEach(function(a) { a.target = "_blank"; });
 </script>
 
 <style>

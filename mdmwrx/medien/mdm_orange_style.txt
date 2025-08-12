@@ -1,5 +1,5 @@
 
-<!-- orange_style.txt -->
+<!-- mdm_orange_style.txt -->
 <style>
     :root {
         --my-hue: 36;

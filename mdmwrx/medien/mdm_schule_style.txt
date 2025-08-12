@@ -1,5 +1,5 @@
 
-<!-- schule.txt -->
+<!-- mdm_schule_style.txt -->
 <style>
     h3 {
         font-family: "Sour Gummy";

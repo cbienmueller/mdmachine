@@ -324,12 +324,6 @@ def get_meta_from_mdyaml(mdfile):
         # Nun eine Liste einzufügender Style-Schnipsel-Dateien
         i_s = yaml_dict.get("m²_include_style")
         mymeta.inc_style_list = get_yaml_value_2_list(i_s)
-        # if isinstance(i_s, list):
-        #    mymeta.inc_style_list = [str(x).lower() for x in i_s]
-        # elif i_s:
-        #    mymeta.inc_style_list = [str(i_s).lower()]
-        # else:
-        #    mymeta.inc_style_list = []      # Dummywert
         
         # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
         s_f = yaml_dict.get("m²_slide_format")
