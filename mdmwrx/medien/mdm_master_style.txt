@@ -1,55 +1,20 @@
 
 <!-- mdm_master_style.txt -->
 
-<script>    /* Mini-Javascript um die Sidebar nachzuladen oder das div auszublenden 8. Sept. 2024 */
+<script>   
+    /* Gib allen externen Links das Target "_blank", also neuen Tab */
+    document.querySelectorAll('a[href^="http"]').forEach(function(a) { a.target = "_blank"; });
+    console.log("master_style initialisiert");
+</script>
 
-    function create_sidebar() { 
-          window.addEventListener(
-            "message",
-            (event) => {
-                const iframealive = event.data;
-                console.log(iframealive);
-                document.getElementById("SIDEBAR").style.display = "block";
-                modify_sidebar();
-            },
-           false
-          );     
-
-          const newDiv = document.createElement("div");
-          newDiv.id="SIDEBAR";  /* dieses div wird in CSS gestaltet */
-          var ifrm = document.createElement("iframe");
-          ifrm.setAttribute("src", "_mdm_sidebar_.html");
-          ifrm.title = "Navigation";
-          ifrm.style.width = "100%";
-          ifrm.style.height = "100%";
-          ifrm.style.borderWidth = "0px";
-          ifrm.id = "SBIframe";
-          newDiv.appendChild(ifrm);
-          document.body.prepend(newDiv);
-          document.getElementById("SIDEBAR").style.display = "none";
-    }
-    function modify_sidebar() {
-        var titletext = document.querySelector("title").textContent.replaceAll(" ", "-");
-        var sbwindow = document.getElementById("SBIframe").contentWindow;
-        sbwindow.postMessage(titletext, "*");
-    }
-    
-	/* Binde nach 0.2 Sekunden eine eventuelle sidebar ein */
+<script>
+    /* Binde nach 0.2 Sekunden eine eventuelle sidebar ein */
     setTimeout(
         function() {
                 create_sidebar(); 
             },
         200);
-        
     /* Gib allen externen Links das Target "_blank", also neuen Tab */
     document.querySelectorAll('a[href^="http"]').forEach(function(a) { a.target = "_blank"; });
 </script>
-
-<style>
-    div.m²_smaller,    span.m²_smaller    { font-size: 80%; line-height: 110%;   font-stretch: 90%; }
-    div.m²_larger,     span.m²_larger     { font-size:120%; line-height: 150%; }
-    div.m²_very_large, span.m²_very_large { font-size:140%; line-height: 220%; }
-</style>
-
-
 

@@ -232,10 +232,11 @@ def convert2html(cd):
         '--toc', '--toc-depth=2',                           # Regeln für Inhaltsverzeichnis
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
         '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
+        '-H', f'{medienurl}/mdm_master_header.txt',         # füge script in den header ein
         '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
         style_files_list
-    # '-H', f'{medienurl}/mdm_header.txt',                 # füge script und css-Links in den header ein
+    
     html_todo = html_todo_base + [
         '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
         f'{cd.tmp_filestem}_preproc.md']                   # temporäre Eingabedatei nach Präprozessing

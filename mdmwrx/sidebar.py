@@ -140,7 +140,7 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     if SB_VERBOSE:
         print("gfi4sm-> root_path: ", root_path, "rel:", relpath, "!")
     if not root_path:
-        return ""
+        root_path = filespath  # return ""
     filename, foldertitle, yd = get_folder_filename_title_yaml(root_path)
     if filename and foldertitle:
         if relpath and not relpath.endswith("/"):
