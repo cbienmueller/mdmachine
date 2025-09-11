@@ -182,7 +182,7 @@ def get_inc_txt_filename(cd, inc_name, inc_type):
         realpath = cd.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
         if realpath.is_file():
             return (f'{prefix}_{save_name}_{inc_type}.txt')
-    print(f'Fehler: der includierte Style {inc_style} wurde nicht als Datei{str(realpath)} gefunden.')
+    print(f'Fehler: der includierte Style {inc_type} wurde nicht als Datei{str(realpath)} gefunden.')
     return ""
 
 
