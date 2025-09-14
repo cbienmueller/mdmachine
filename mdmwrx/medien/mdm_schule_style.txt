@@ -2,7 +2,8 @@
 <!-- mdm_schule_style.txt -->
 <style>
     h3 {
-        font-family: "Sour Gummy";
-        font-stretch: 105%;
+        font-family: "Fredoka";
+        font-stretch: 110%;
+        font-weight: 700;
     }
 </style>

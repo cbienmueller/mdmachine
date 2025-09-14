@@ -182,7 +182,7 @@ def get_inc_txt_filename(cd, inc_name, inc_type):
         realpath = cd.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
         if realpath.is_file():
             return (f'{prefix}_{save_name}_{inc_type}.txt')
-    print(f'Fehler: der includierte Style {inc_type} wurde nicht als Datei{str(realpath)} gefunden.')
+    print(f'Fehler: der includierte Style {save_name} wurde nicht als Datei{str(realpath)} gefunden.')
     return ""
 
 
@@ -196,21 +196,32 @@ def convert2html(cd):
     USE_DOCKER = False
     medienurl = '/opt/medien' if USE_DOCKER else str(cd.c_o.medien_path)
     
+    # Es werden Styles gesucht, die entweder immer, nur in Slides oder nur in Nicht-Slides eingefügt werden 
     style_files_list = []
     style_slides_files_list = []
+    style_no_slides_files_list = []
     style_list = ['master'] + cd.c_o.inc_style_list + cd.mymeta.inc_style_list
     for inc_style in style_list:
-        inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style')
-        debug(cd.c_o, "inc_style_filename", inc_style_filename)
-        if inc_style_filename:
-            style_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
-        
+        gibt_slidestyle_flag = False
+        # braucht und gibt es einen user_<bla>_style_slides.txt?
         if cd.mymeta.gen_slides_flag:
             inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style_slides')
             debug(cd.c_o, "inc_style_slides_filename", inc_style_filename)
             if inc_style_filename:
                 style_slides_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
-    
+                gibt_slidestyle_flag = True
+        
+        # gibt es einen user_<bla>_style.txt?
+        inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style')
+        debug(cd.c_o, "inc_style_filename", inc_style_filename)
+        if inc_style_filename:
+            if gibt_slidestyle_flag:
+                # Wird also nur für nicht-Slides verwendet
+                style_no_slides_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
+            else:
+                # Wird für alle Dateien verwendet
+                style_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
+        
     # Anfang der Liste der Parameter um HTML zu erzeugen
     html_todo_base = [                                      
         'pandoc', 
@@ -235,11 +246,12 @@ def convert2html(cd):
         '-H', f'{medienurl}/mdm_master_header.txt',         # füge script in den header ein
         '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
-        style_files_list
+        style_files_list                                    # include-Styles für alle Ausgabetypen
     
     html_todo = html_todo_base + [
         '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
-        f'{cd.tmp_filestem}_preproc.md']                   # temporäre Eingabedatei nach Präprozessing
+        f'{cd.tmp_filestem}_preproc.md'] + \
+        style_no_slides_files_list                      # include-Styles für alle Ausgabetypen AUSSER Slides
 
     # '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein    
     
@@ -260,9 +272,10 @@ def convert2html(cd):
                 
             slides_todo += [
                 '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html']        # andere Zieldatei
-            #    '-A', f'{medienurl}/mdm_css_slides.txt']             # füge am Ende noch styles für Präsentationen ein
-            slides_todo += style_slides_files_list              # Userstyles für slides    
-            slides_todo += additional_stylefile + [
+            
+            slides_todo += style_slides_files_list              # # include-Styles spezifisch für alle Slides
+            slides_todo += additional_stylefile
+            slides_todo += [
                 f'{cd.tmp_filestem}_preproc.md',                # temporäre Eingabedatei nach Präprozessing
                 '\n'] 
 

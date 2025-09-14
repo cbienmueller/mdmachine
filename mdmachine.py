@@ -30,7 +30,7 @@ from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yam
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.RC4 von 2025-08-13')
+print('mdmachine Version 1.0.RC5 von 2025-09-14')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
