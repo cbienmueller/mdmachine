@@ -66,6 +66,9 @@ MERMAID_LOADER = \
     mermaid.initialize(config);
 </script>\n
 '''
+#  ##  Anmerkung: obige Adresse enthält fest kodiert die Version von Mermaid. 
+#      Wenn diese nicht mehr verfügbar ist haben wir ein Problem...
+#  ##  Grund: die Versionen 11.10 - 10.12 (gerade aktuell) haben einen Bug beim Sandbox-Modus.
 
 
 def preprocess(filein, fileout, remove_yaml=False):

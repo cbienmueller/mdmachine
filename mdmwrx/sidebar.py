@@ -54,7 +54,7 @@ SIDEBAR_slides = ' &nbsp; <a href="{}" title="PDF-SLIDES Format {}" target="_bla
 SIDEBAR_sectionende = '\n\t</ul>\n'
 SIDEBAR_sectionendemini = '\n\t</ul>\n'
 
-TIMELINE_li = '\t\t<li>{} <a href="{}" id="{}" title="{}" target="_parent">{}</a></li>\n'
+TIMELINE_li = '\t\t<li>{} <a href="{}" id="{}" title="{}" target="_parent">{}</a> <small> in {}</small></li>\n'
 
 SIDEBAR_fine = '''
   </details>
@@ -384,7 +384,7 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
     """
     isroot = False
     lang = ""
-    index_filename, _, ydict = get_folder_filename_title_yaml(path)
+    index_filename, folder_title, ydict = get_folder_filename_title_yaml(path)
     if ydict:
         isroot = bool(ydict.get("m²_isroot"))
         lang = ydict.get("lang")
@@ -469,7 +469,8 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
                                                                      relpath + htmlfile.name,
                                                                      title.replace(" ", "-"), 
                                                                      abstract,
-                                                                     title)))
+                                                                     title,
+                                                                     folder_title)))
               
     fanzahl = len(li_list[0]) + len(li_list[1]) + len(li_list[2])
     if fanzahl:
