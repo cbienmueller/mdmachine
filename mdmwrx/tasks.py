@@ -134,11 +134,11 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     for endung in endungen:
 
         # uralte immer entfernen (sollten anderweitig bereits entfernt worden sein)
-        (path / f'_mdmold_{sourcefile.stem}{endung}').unlink(missing_ok=True)
+        (path / f'_mdm_old_{sourcefile.stem}{endung}').unlink(missing_ok=True)
 
         # alte immer umbenennen, auch wenn sie nicht ersetzt werden (dann müssen sie trotzdem weg)
         try:
-            (path / f'{sourcefile.stem}{endung}').rename(path / f'_mdmold_{sourcefile.stem}{endung}')
+            (path / f'{sourcefile.stem}{endung}').rename(path / f'_mdm_old_{sourcefile.stem}{endung}')
         except FileNotFoundError:
             pass
 
@@ -237,9 +237,9 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
             try:
                 time.sleep(10)   # Abstand zwischen Doppelkonvertierungen um Cloudsync. zu schonen
             except KeyboardInterrupt:
-                print("\nPause abgebrochen. Kein Problem, lösche trotzdem schnell mdmold-Dateien.")
-                alte_Dateien_entfernen(path)
-                print("Fertig & beendet (per KeyboardInterrupt)")
+                print("\nPause abgebrochen. Kein Problem, lösche trotzdem schnell mdm_old-Dateien.")
+                alte_Dateien_entfernen(path, True)
+                print("Fertig & beendet (wegen KeyboardInterrupt)")
                 exit()
             alte_Dateien_entfernen(path)
         
@@ -254,35 +254,62 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
 
 def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False):
     print('Funktion: Polling')
-    k = 1
-    handle_dir(c_o, 
-               startpath, 
-               do_sidebar=do_sidebar, 
-               do_force=do_force,              # force max nur beim ersten Mal
-               do_recursive=do_recursive)
+    TIMERSTARTWERT = 30  # Sekunden, bis auch alte Backupdateien gelöscht werden
+    timer = TIMERSTARTWERT
+    be_quiet = False
+    do_print = True
     while True:
+        k = handle_dir(c_o, 
+                       startpath, 
+                       do_print=do_print,
+                       do_sidebar=do_sidebar, 
+                       do_force=do_force,              
+                       do_recursive=do_recursive,
+                       be_quiet=be_quiet)
+        do_force = False  # force max nur beim ersten Mal
+        do_print = False
+        be_quiet = True  # volle Ausgabe max nur beim ersten Mal
         if k:
+            timer = TIMERSTARTWERT
             if do_recursive:
-                print('\nNun wird der Verzeichnisbaum alle 5s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
+                print('\nNun wird der Verzeichnisbaum alle 8s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
             else:
-                print('\nNun wird das Verzeichnis alle 5s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
+                print('\nNun wird das Verzeichnis alle 8s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
         else:
             try:
-                time.sleep(5)
+                time.sleep(8)
+                timer -= 8
+                if timer <= 0:
+                    alte_Dateien_entfernen(startpath, False, do_recursive)
+                    timer = TIMERSTARTWERT
             except KeyboardInterrupt:
-                print("\nPolling abgebrochen. Kein Problem...")
+                print("\nPause abgebrochen. Kein Problem, lösche trotzdem schnell mdm_old-Dateien.")
+                alte_Dateien_entfernen(startpath, True, do_recursive)
+                print("Fertig & beendet (wegen KeyboardInterrupt)")
                 exit()
-        k = handle_dir(c_o, startpath, do_print=False, do_sidebar=do_sidebar, do_recursive=do_recursive, be_quiet=True)   
-        # hier kein do_force mehr, dafür immer quiet durch die Verzeichnisse...
 
 
-def alte_Dateien_entfernen(path):
+def alte_Dateien_entfernen(path, force_all=False, do_recursive=False):
     for oldfile in path.iterdir():
-        if oldfile.is_file() and \
-           oldfile.stem.startswith("_mdmold_"):
-            print(f"    Entferne vorherige Version ({oldfile.name}).")
-            oldfile.unlink(missing_ok=True)
-    
+        if oldfile.is_file():
+            if oldfile.stem.startswith("_mdm_aged_"):
+                print(f"    'remove' vor-vorherige Version ({oldfile.name}).")
+                oldfile.unlink(missing_ok=True)
+        elif do_recursive and oldfile.is_dir():
+            alte_Dateien_entfernen(oldfile, force_all, do_recursive)
+    for oldfile in path.iterdir():
+        if oldfile.is_file():
+            if oldfile.stem.startswith("_mdm_old_"):
+                if force_all:
+                    print(f"    'remove' vorherige Version ({oldfile.name}).")
+                    oldfile.unlink(missing_ok=True)
+                else:
+                    print(f"    'aging'  vorherige Version ({oldfile.name}).")
+                    try:
+                        oldfile.rename(path / f'_mdm_aged_{oldfile.name[9:]}')
+                    except FileNotFoundError:
+                        pass
+            
 
 def get_meta_from_mdyaml(mdfile):
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
