@@ -11,7 +11,7 @@ from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
 from mdmwrx.tools import debug
 
-SB_VERBOSE = 2
+SB_VERBOSE = 0
 
 FILE_barebone = """<!DOCTYPE html>
 <html lang="{}">
