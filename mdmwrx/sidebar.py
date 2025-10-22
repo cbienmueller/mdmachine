@@ -11,7 +11,7 @@ from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
 from mdmwrx.tools import debug
 
-SB_VERBOSE = False
+SB_VERBOSE = 2
 
 FILE_barebone = """<!DOCTYPE html>
 <html lang="{}">
@@ -142,36 +142,38 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     if not root_path:
         root_path = filespath  # return ""
     filename, foldertitle, yd = get_folder_filename_title_yaml(root_path)
-    if filename and foldertitle:
-        if relpath and not relpath.endswith("/"):
-            relpath += "/"
-        smf_output = ""
-        
-        if filespath and SB_VERBOSE: 
-            print(filespath, root_path)
-        if not filespath or root_path == filespath:
-            all_files = True
-        else:
-            all_files = False
-        l_section, _, _, _ = get_files_section(root_path, relpath, foldertitle, timeline_list, all_files)
-        smf_output += l_section
+    if not (filename and foldertitle):      # Kein Verzeichnis mit Inhalten gefunden
+        return ""
 
-        smf_sub_output = ""
-        for subdir in root_path.iterdir():
-            if subdir.is_dir():
-                if SB_VERBOSE:
-                    print("sitemap: recurse into -> " + subdir.name)
-                content = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
-                smf_sub_output += content
-        if smf_sub_output:
-            smf_output += SIDEBAR_sectionstart.format("", "")
-            smf_output += smf_sub_output
-            smf_output += SIDEBAR_sectionende
-        if SB_VERBOSE:
-            print(f"smf_output:{smf_output}")
-        return smf_output
-    return ""
+    if relpath and not relpath.endswith("/"):
+        relpath += "/"
+    smf_output = ""
+    
+    if filespath and SB_VERBOSE: 
+        print("filespath, root_path:", filespath, root_path)
 
+    if not filespath or root_path == filespath:
+        all_files = True
+    else:
+        all_files = False
+    l_section, _, _, _ = get_files_section(root_path, relpath, timeline_list, all_files)
+    smf_output += l_section
+
+    smf_sub_output = ""
+    for subdir in root_path.iterdir():
+        if subdir.is_dir():
+            if SB_VERBOSE:
+                print("sitemap: recurse into -> " + subdir.name)
+            content = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
+            smf_sub_output += content
+    if smf_sub_output:
+        smf_output += SIDEBAR_sectionstart.format("", "")
+        smf_output += smf_sub_output
+        smf_output += SIDEBAR_sectionende
+    if SB_VERBOSE > 1:
+        print(f"smf_output:{smf_output}")
+    return smf_output
+    
 
 def make_sidebar_file(c_o, path, do_recursive=False):
     file_path = path / '_mdm_sidebar_.html'
@@ -285,59 +287,6 @@ def analyze_priostrg(priostrg):
     return prio
                     
     
-def get_subdirs_section(path):
-    li_list = [[], [], []]
-    subs_output = ''
-    subname_list = []
-    
-    for subdir in path.iterdir():
-        if subdir.is_dir():
-            subname_list.append(subdir.name)
-            indexfilename = ""
-            subdirprio = 1
-            subdirtitel = ""
-            if (subdir / "mdm_dir.yaml").exists():  # Gibt es mdm_dir.yaml im Unterverzeichnis?
-                debug(c_o, "s ", subdir.name, " hat yaml")
-                subdict = get_yaml_dict_from_yaml(subdir / "mdm_dir.yaml")
-                if subdict:
-                    indexfilename = subdict.get("m²_indexfilename")
-                    if indexfilename:
-                        indexfilename = indexfilename.replace("/", "_")
-                        indexfilename = f'{subdir.name}/{indexfilename}'
-                    subdirtitel = subdict.get("overridetitel")  # doof, besser wäre der Titel des indexfiles, s.u.
-                    subdirprio = analyze_priostrg(subdict.get("subdirprio"))
-                
-            if (not indexfilename) or (not (path / indexfilename).exists()):
-                indexfilename = f'{subdir.name}/index.html'
-            if not (path / indexfilename).exists():
-                indexfilename = f'{subdir.name}/index.htm'
-                                
-            if (path / indexfilename).exists():
-                if not subdirtitel:
-                    subdirtitel, prio = get_title_prio_from_html((path / indexfilename), subdir.name)
-                
-                li_list[subdirprio].append((subdirtitel, 
-                                           SIDEBAR_li_bb[subdirprio].format("", indexfilename, "", "", subdirtitel, "")))  
-                # ein tupel mit (sortierkriterium,inhalt)
-    s_anzahl = len(li_list[0]) + len(li_list[1]) + len(li_list[2])
-    if s_anzahl:
-        li_list[1].sort()
-        if li_list[2]:
-            li_list[2].sort()
-            li_list[1] = li_list[2] + [("", '<br>\n')] + li_list[1]
-        if li_list[0]:
-            li_list[0].sort()
-            li_list[1] = li_list[1] + [("", '<br>\n')] + li_list[0]
-
-        subs_output += SIDEBAR_sectionstart.format("&#x21E9; Unterkategorien", "")
-
-        for li in li_list[1]:
-            subs_output += li[1]
-        subs_output += SIDEBAR_sectionendemini
-
-    return subs_output, s_anzahl, ", ".join(subname_list)
-
-    
 def get_parent_section(path):
     parent_filename, parent_title, parent_dict = get_folder_filename_title_yaml(path.parent)
     
@@ -379,7 +328,7 @@ def format_yaml_links(links):
     return linkoutput, l_anzahl
     
     
-def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all_files=True):
+def get_files_section(path, relpath="", timeline_list=None, all_files=True):
     """ findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
     """
     isroot = False
@@ -392,16 +341,8 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
     files_output = ''
     if relpath and not relpath.endswith("/"):
         relpath += "/"
-    if False:  # all_files:
-        if sectiontitle:
-            vari_br = ''
-            sectiontitle = '&#x21D8; ' + sectiontitle
-        else:
-            vari_br = '<br>'
-            sectiontitle = '&#x21E8; Seiten'
-    else:
-        vari_br = ''
-        sectiontitle = ''
+    
+    vari_br = ''   # hmmm, Altlast?
         
     for htmlfile in path.iterdir():
         if htmlfile.is_file() and \
@@ -417,9 +358,11 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
             # yey, wir haben eine html-Datei gefunden. Sammle dies als Link, mit Title, Priorität und ggf. PDF-File
             title, prio = get_title_prio_from_html(htmlfile)  # prio aus {0 , 1, 2} für Low, Normal, High
             liclass = "nonindex"
+            title_prefix = ""
             if htmlfile.name == index_filename:
                 prio = 2
                 liclass = ""
+                title_prefix = "🗁" if all_files else "🗀"
             pdffilename = f'{htmlfile.stem}_A4.pdf'
             if (path / pdffilename).exists() and all_files:
                 pdffileentry = SIDEBAR_pdf.format(relpath + pdffilename)
@@ -437,7 +380,7 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
                                                              relpath + htmlfile.name,
                                                              title.replace(" ", "-"), 
                                                              "", 
-                                                             title, 
+                                                             title_prefix + title, 
                                                              pdffileentry + slidesfileentry)
                                   )) 
             # ein tupel mit (sortierkriterium,inhalt)
@@ -482,7 +425,7 @@ def get_files_section(path, relpath="", sectiontitle="", timeline_list=None, all
             li_list[0].sort()
             li_list[1] = li_list[1] + [("", vari_br)] + li_list[0]
 
-        files_output += SIDEBAR_sectionstart.format(sectiontitle, 'class="files"')
+        files_output += SIDEBAR_sectionstart.format('', 'class="files"')
 
         for li in li_list[1]:
             files_output += li[1]

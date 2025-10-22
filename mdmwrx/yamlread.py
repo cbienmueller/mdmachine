@@ -31,27 +31,27 @@ def get_yaml_dict_from_md(mdfile):
                     if not reading_yaml:
                         reading_yaml = True
                     else:
-                        return yaml.safe_load(yaml_block)
-
+                        return valides_yaml_dict(yaml.safe_load(yaml_block))
+                        
                 elif reading_yaml: 
                     yaml_block += line
     except Exception:
         pass                # nicht lesbar = nicht interessant...
 
-    return {}
+    return yaml.safe_load("m²_yaml_load_error: True") 
     
     
 def get_yaml_dict_from_yaml(yamlfile):
     """ Liest reines YAML ein und konvertiert zu einem dict.
         Bei Fehler: Leeres dict.
     """
-    yaml_dict = {}
+    yaml_dict = {} 
     try:
         with yamlfile.open() as f:
             yaml_dict = yaml.safe_load(f)
     except Exception:
-        pass                # nicht lesbar = nicht interessant...
-    return yaml_dict
+        pass               # nicht lesbar = nicht interessant...
+    return valides_yaml_dict(yaml_dict)
 
 
 def get_yaml_value_2_list(entry, default=[]):
@@ -65,3 +65,10 @@ def get_yaml_value_2_list(entry, default=[]):
         return default      # Dummywert
     else:
         return [default]
+
+def valides_yaml_dict(yaml_dict):
+    try:
+        irgendeinwert = yaml_dict.get("irgeneinschluessel")
+        return yaml_dict
+    except AttributeError:
+        return yaml.safe_load("m²_yaml_load_error: True") 

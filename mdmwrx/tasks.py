@@ -330,7 +330,7 @@ def get_meta_from_mdyaml(mdfile):
     yaml_dict = get_yaml_dict_from_md(mdfile)
     includes = []
 
-    # print(yaml_dict)    # nur für debugging
+    print(yaml_dict)    # nur für debugging
     if yaml_dict:
         gen_slides_value = yaml_dict.get("m²_generate_slides")
         if gen_slides_value and str(gen_slides_value)[0].lower() in ("t", "y", "j", "1", "k"):
