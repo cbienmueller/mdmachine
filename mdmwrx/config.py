@@ -35,6 +35,8 @@ class Config_Obj:
     flag_gen_sidebar: bool      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
     #                           #   mit html-Dateien geführt werden?
     flag_verbose: bool          # für Ausgabe von Debug-Informationen
+    flag_sup_pdf: bool          # PDF-Erzeugung unterdrücken
+    flag_gen_slides: bool       # Slides erzeugen?
     
 
 def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
@@ -66,7 +68,9 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
                 yd.get("m²_lang", "de-DE"),
                 yd.get("m²_generate_sitemap", False),
                 yd.get("m²_generate_sidebar", False),
-                yd.get("m²_verbose", False)
+                yd.get("m²_verbose", False),
+                yd.get("m²_suppress_pdf", False),
+                yd.get("m²_generate_slides", False)
             )
             
         else:
@@ -89,6 +93,8 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
                     [],
                     [],
                     "de-DE",
+                    False,
+                    False,
                     False,
                     False,
                     False

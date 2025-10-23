@@ -95,8 +95,8 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     #############################
     
     # Metadaten aus dem YAML-Bereich holen:
-    mymeta, includes = get_meta_from_mdyaml(sourcefile)
-    mymeta, includes = get_meta_from_mdyaml(sourcefile)
+    mymeta, includes = get_meta_from_mdyaml(c_o, sourcefile)
+    # mymeta, includes = get_meta_from_mdyaml(sourcefile)
     
     if not mymeta.lang:
         mymeta.lang = c_o.lang
@@ -311,7 +311,7 @@ def alte_Dateien_entfernen(path, force_all=False, do_recursive=False):
                         pass
             
 
-def get_meta_from_mdyaml(mdfile):
+def get_meta_from_mdyaml(c_o, mdfile):
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
           - s.o.
         - sowie includierte md-Dateien als String-Liste
@@ -327,40 +327,42 @@ def get_meta_from_mdyaml(mdfile):
     mymeta = MdYamlMeta()
     mymeta.inc_style_list = []
 
-    yaml_dict = get_yaml_dict_from_md(mdfile)
+    yaml_dict = get_yaml_dict_from_md(mdfile)  # existiert immer, aber ggf. leer, 
     includes = []
 
-    print(yaml_dict)    # nur für debugging
-    if yaml_dict:
-        gen_slides_value = yaml_dict.get("m²_generate_slides")
-        if gen_slides_value and str(gen_slides_value)[0].lower() in ("t", "y", "j", "1", "k"):
+    # print(yaml_dict)    # nur für debugging
+    gen_slides_value = yaml_dict.get("m²_generate_slides")
+    if gen_slides_value:
+        if str(gen_slides_value)[0].lower() in ("t", "y", "j", "1", "k"):
             mymeta.gen_slides_flag = True
             if str(gen_slides_value)[0].lower() == "k":
                 mymeta.keep_slides_html_flag = True
+    else:
+        mymeta.gen_slides_flag = c_o.flag_gen_slides
+    
+    mymeta.lang = yaml_dict.get("lang")
+    mymeta.title = yaml_dict.get("title")
+    # print("YAML-title: ", mymeta.title)
+    mymeta.suppress_pdf_flag = yaml_dict.get("m²_suppress_pdf", c_o.flag_sup_pdf)   # Default wird nur genommen, wenn gar kein Wert gesetzt ist!
+    includes = yaml_dict.get("m²_include_after")
+    if isinstance(includes, str):
+        includes = [includes]
+    if not isinstance(includes, list):
+        includes = []
+    
+    # Nun eine Liste einzufügender Style-Schnipsel-Dateien
+    i_s = yaml_dict.get("m²_include_style")
+    mymeta.inc_style_list = get_yaml_value_2_list(i_s)
+    
+    # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
+    s_f = yaml_dict.get("m²_slide_format")
+    if isinstance(s_f, list):
+        mymeta.slide_format_list = [str(x).lower() for x in s_f]
+    elif s_f:
+        mymeta.slide_format_list = [str(s_f).lower()]
+    else:
+        mymeta.slide_format_list = ["a5"]    # Dummywert, quasi Din-A5 quer entspricht iPad air gen 5
         
-        mymeta.lang = yaml_dict.get("lang")
-        mymeta.title = yaml_dict.get("title")
-        # print("YAML-title: ", mymeta.title)
-        mymeta.suppress_pdf_flag = yaml_dict.get("m²_suppress_pdf", False)
-        includes = yaml_dict.get("m²_include_after")
-        if isinstance(includes, str):
-            includes = [includes]
-        if not isinstance(includes, list):
-            includes = []
-        
-        # Nun eine Liste einzufügender Style-Schnipsel-Dateien
-        i_s = yaml_dict.get("m²_include_style")
-        mymeta.inc_style_list = get_yaml_value_2_list(i_s)
-        
-        # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
-        s_f = yaml_dict.get("m²_slide_format")
-        if isinstance(s_f, list):
-            mymeta.slide_format_list = [str(x).lower() for x in s_f]
-        elif s_f:
-            mymeta.slide_format_list = [str(s_f).lower()]
-        else:
-            mymeta.slide_format_list = ["a5"]    # Dummywert, quasi Din-A5 quer entspricht iPad air gen 5
-            
     if not mymeta.title:
         mymeta.title = mdfile.stem
         mymeta.force_title = True

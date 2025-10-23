@@ -31,7 +31,12 @@ def get_yaml_dict_from_md(mdfile):
                     if not reading_yaml:
                         reading_yaml = True
                     else:
-                        return valides_yaml_dict(yaml.safe_load(yaml_block))
+                        try:
+                            yaml_dict = yaml.safe_load(yaml_block)
+                        except Exception as e:
+                            yaml_dict = {}
+                            print(f'Yaml-Load-Error: Exception {e}')
+                        return valides_yaml_dict(yaml_dict)
                         
                 elif reading_yaml: 
                     yaml_block += line
@@ -66,9 +71,10 @@ def get_yaml_value_2_list(entry, default=[]):
     else:
         return [default]
 
+
 def valides_yaml_dict(yaml_dict):
     try:
-        irgendeinwert = yaml_dict.get("irgeneinschluessel")
+        _ = yaml_dict.get("irgeneinschluessel")
         return yaml_dict
     except AttributeError:
         return yaml.safe_load("m²_yaml_load_error: True") 
