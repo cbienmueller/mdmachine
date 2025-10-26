@@ -1,8 +1,10 @@
+# Batteries
 import os
 import subprocess
 
 from pathlib import Path
 
+# MDMWRX
 from mdmwrx.tools import debug
 
 """ führt die eigentlich md->html->pdf - Konvertierung durch. Ggf. doppelt, wenn auch Slides gewünscht sind.
@@ -237,6 +239,10 @@ def convert2html(cd):
         f.write(DYN_HEADER.format(cd.c_o.mainfont,
                                   cd.c_o.cssfile_main,
                                   cd.c_o.cssfile_md))
+        for cssitem in cd.c_o.inc_css_list:
+            f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cssitem}">\n')
+        if cd.c_o.inc_main_css:
+            f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cd.c_o.inc_main_css}">\n')
         
     html_todo_base += [    
         '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen
@@ -244,7 +250,7 @@ def convert2html(cd):
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
         '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
         '-H', f'{medienurl}/mdm_master_header.txt',         # füge script in den header ein
-        '--highlight-style', 'pygments',                    # wähle einen besser lesbaren Syntax-Highlighting-Stil
+        '--syntax-highlighting', 'pygments',                # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
         style_files_list                                    # include-Styles für alle Ausgabetypen
     

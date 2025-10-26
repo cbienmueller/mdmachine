@@ -5,11 +5,14 @@
         eine Siedbar, mit Links zu den Dateien und Verzeichnissen.
         Fehlt: Mehr Doku zu mdm_dir.yaml und Inhalten der Unterverzeichnisse.
 """
+# Batteries
 from dataclasses import dataclass
 
+# MDMWRX
 from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
 from mdmwrx.tools import debug
+from mdmwrx.config import relpath_2_root
 
 SB_VERBOSE = 0
 
@@ -21,6 +24,7 @@ FILE_barebone = """<!DOCTYPE html>
     <title>{}</title>
     <link rel="Stylesheet" type="text/css" href="{}">
     <link rel="Stylesheet" type="text/css" href="{}">
+    {}
 </head>
 """
 
@@ -91,7 +95,7 @@ TIMELINE_fine = '''
 """
 
 
-def make_sitemap_file(c_o, root_path):
+def make_sitemap_n_timeline(c_o, root_path):
     sm_path = root_path / 'sitemap.html'
     tl_path = root_path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
@@ -102,7 +106,8 @@ def make_sitemap_file(c_o, root_path):
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-mdm_dir.yaml
     
-    output = SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb)
+    output = SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb, 
+        f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
     output += content
     output += SIDEBAR_fine
     overwrite_if_changed(c_o, sm_path, output)
@@ -112,7 +117,8 @@ def make_sitemap_file(c_o, root_path):
     del timeline_list[0]  # dort ist nur ein Dummy
     timeline_list.sort(key=lambda tup: tup[0], reverse=True)        # sorts in place
     
-    output = TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb)
+    output = TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb, 
+        f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
     for d, h in timeline_list[:16]:
         output += h
     output += TIMELINE_fine
@@ -133,7 +139,8 @@ def get_side_navi(c_o, path):
         
 def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
-        relpath ist der zu den Links zu addierende path, der den Ort relativ zum Verzeichnis von make_sitemap_file angibt.
+        relpath ist der zu den Links zu addierende path,
+            der den Ort relativ zum Verzeichnis von make_sitemap_n_timeline angibt.
         timeline_list nimmt Datei-Datum-Pärchen auf.
         filespath ist (wenn gesetzt) der einzige Pfad, bei dem Files mit aufgeführt werden. Sonst nur Verzeichnisse.
     '''
@@ -156,11 +163,12 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
         all_files = True
     else:
         all_files = False
-    l_section, _, _, _ = get_files_section(root_path, relpath, timeline_list, all_files)
+    l_section, _ = get_files_section(root_path, relpath, timeline_list, all_files)
     smf_output += l_section
 
     smf_sub_output = ""
-    for subdir in root_path.iterdir():
+    # for subdir in root_path.iterdir():
+    for subdir in sorted(root_path.iterdir(), key=lambda x: x.name.lower()):
         if subdir.is_dir():
             if SB_VERBOSE:
                 print("sitemap: recurse into -> " + subdir.name)
@@ -180,8 +188,9 @@ def make_sidebar_file(c_o, path, do_recursive=False):
     output = ""
 
     navi_content, lang, ri = get_side_navi(c_o, path)
-
-    output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb)
+    relpath2r = relpath_2_root(path)
+    output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb, 
+        f'<link rel="Stylesheet" type="text/css" href="{relpath2r}/{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
     output += navi_content               # komplette Navigation
     output += '\t<hr>\n'                 # Trennlinie
     
@@ -331,12 +340,8 @@ def format_yaml_links(links):
 def get_files_section(path, relpath="", timeline_list=None, all_files=True):
     """ findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
     """
-    isroot = False
-    lang = ""
     index_filename, folder_title, ydict = get_folder_filename_title_yaml(path)
-    if ydict:
-        isroot = bool(ydict.get("m²_isroot"))
-        lang = ydict.get("lang")
+    
     li_list = [[], [], []]
     files_output = ''
     if relpath and not relpath.endswith("/"):
@@ -431,7 +436,7 @@ def get_files_section(path, relpath="", timeline_list=None, all_files=True):
             files_output += li[1]
         files_output += SIDEBAR_sectionende
 
-    return files_output, fanzahl, isroot, lang
+    return files_output, fanzahl
 
 
 @dataclass

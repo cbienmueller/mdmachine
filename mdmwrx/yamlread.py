@@ -6,6 +6,7 @@
         Pandoc ist dabei aber kritischer: Start:--- Ende:...
 """
 
+# not Batteries:
 try:
     import yaml  # Quelle unter debian: python3-yaml, sonst pyyaml per pip
 except Exception:
@@ -13,6 +14,40 @@ except Exception:
         Installiere entweder python3-yaml unter Debian 
         oder pip pyyaml.''')
     exit()
+
+
+class Y_dict(dict):
+    def get_bool(self, key, default=False, accept_char_as_true=""):
+        """ gibt IMMER True oder False zurück!
+        """
+        value = self.get(key, default)
+        if isinstance(value, int):
+            # beinhaltet bool
+            return True if value else False
+        if isinstance(value, str) and len(value):
+            if value.strip()[0] in "jJyYtT1":
+                return True
+            if accept_char_as_true and value.strip()[0] in accept_char_as_true:
+                return True
+        return False
+
+    def get_list_lowered(self, key, default=[]):
+        vlist = self.get_list(key, default)
+        return [str(x).lower() for x in vlist]
+
+    def get_list(self, key, default=[]):
+        """ was immer als value aus dem dict geliefert wurde, wird nun als Liste zurückgegeben
+        """
+        value = self.get(key, default)
+        # print(f'get_list({key})={value} default={default}')
+        if isinstance(value, list):
+            return value
+        elif value:
+            return [str(value)]
+        elif isinstance(default, list):
+            return default      # Dummywert
+        else:
+            return [default]
 
 
 def get_yaml_dict_from_md(mdfile):
@@ -36,14 +71,14 @@ def get_yaml_dict_from_md(mdfile):
                         except Exception as e:
                             yaml_dict = {}
                             print(f'Yaml-Load-Error: Exception {e}')
-                        return valides_yaml_dict(yaml_dict)
+                        return valid_Y_dict(yaml_dict)
                         
                 elif reading_yaml: 
                     yaml_block += line
     except Exception:
         pass                # nicht lesbar = nicht interessant...
 
-    return yaml.safe_load("m²_yaml_load_error: True") 
+    return valid_Y_dict("")
     
     
 def get_yaml_dict_from_yaml(yamlfile):
@@ -56,25 +91,11 @@ def get_yaml_dict_from_yaml(yamlfile):
             yaml_dict = yaml.safe_load(f)
     except Exception:
         pass               # nicht lesbar = nicht interessant...
-    return valides_yaml_dict(yaml_dict)
+    return valid_Y_dict(yaml_dict)
 
 
-def get_yaml_value_2_list(entry, default=[]):
-    # was immer als entry aus einem yaml-dict geliefert wurde, wird nun als Liste zurückgegeben
-        
-    if isinstance(entry, list):
-        return [str(x).lower() for x in entry]
-    elif entry:
-        return [str(entry).lower()]
-    elif isinstance(default, list):
-        return default      # Dummywert
-    else:
-        return [default]
-
-
-def valides_yaml_dict(yaml_dict):
-    try:
-        _ = yaml_dict.get("irgeneinschluessel")
-        return yaml_dict
-    except AttributeError:
-        return yaml.safe_load("m²_yaml_load_error: True") 
+def valid_Y_dict(yaml_dict):
+    if not isinstance(yaml_dict, dict):
+        return Y_dict({"m²_yaml_load_error": True}) 
+    return Y_dict(yaml_dict)
+    

@@ -71,36 +71,51 @@ DEMO_MDM_ROOT_YAML = """
 ## Enthält Informationen für den gesamten Verzeichnisbaum, beginnend mit dem Verzeichnis, in dem die Datei liegt.
 ## Es handelt sich quasi um die Konfigurationsdatei der mdmachine.
 ## 
-## Beispielinhalte sind einfach auskommentiert, da es die Standardwerte sind.
+## Achtung: Änderungen in der Datei werden nur bei einem Neustart von mdmachine eingelesen. 
+##          Läuft es dauerhaft mit "-p" (polling) so bemerkt es die Änderung nicht selbst!
+##
+## Beispielinhalte sind im Foilgenden einfach auskommentiert, da es die Standardwerte sind.
 ##
 ## 1. Klassisches Customizing
 ##
 ##      m²_lang: Sprachstring
 ##          welche Sprache soll als HTML lang Wert gesetzt werden.
 ##          Wert im Markdown-YAML-Block überschreibt dies.
-#m²_lang: "de-DE"
+# m²_lang: "de-DE"
 
-## 1.2. Liste von einzubindenden Dateien
+## 2a. Liste von einzubindenden URLs
 ##      Hier nur nach Zweck unterschieden. Wenn weitere benötigt werden, dann mit @include einbinden
+##      Oder lokal mit m²_include_css (s.u.). 
 ##
 ##      Für jede HTML-Datei
-#m²_cssfile_main: 'https://www.bienmueller.de/css/mdm_main.css'
-##      Für aus md generierte zusätzlich zu main
-#m²_cssfile_md: 'https://www.bienmueller.de/css/mdm_md.css'
-##      Für in mdmachine generierte (Sidebar, Sitemap) zusätzlich zu main
-#m²_cssfile_sb: 'https://www.bienmueller.de/css/mdm_sb.css'
-
+# m²_cssfile_main: 'https://www.bienmueller.de/css/mdm_main.css'
+##      Für aus md generiertes zusätzlich zu main
+# m²_cssfile_md: 'https://www.bienmueller.de/css/mdm_md.css'
+##      Für in mdmachine generierte (Sidebar, Sitemap, Timeline) zusätzlich zu main
+# m²_cssfile_sb: 'https://www.bienmueller.de/css/mdm_sb.css'
+##
 ##      Der wichtigste Font (im woff2-Format), der vorab geladen werden soll
-#m²_mainfont: 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'
+# m²_mainfont: 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'
 
-##      Eine Liste von in allen Markdowndateien einzubindende Styles
+## 2b. Eine Liste von in allen Markdowndateien einzubindende Styles
+##     Styles liegen im Pfad von mdmachine
 ##          Beispiele (Standard: nichts):
 ##          Ein Style:
 ## m²_include_style: demo
 ##          Array of Styles:
 ## m²_include_style: [demo, schule]
-
-## 2. Fix-Link-Liste
+## 
+## 2c. Liste von CSS-Datei-Pfaden relativ zum Root, die als File-URLs eingebunden werden.
+##
+## m²_include_css: ["css/design.css"]
+# m²_include_css: []
+##
+## 2d. Eine CSS-Datei, die aber auch bei sidebat, sitemap und timeline inkludiert werden soll
+##     Dies ist der Ort für einheitliche Farbdefinitionen
+##
+# m²_include_main_css: ""
+##
+## 3. Fix-Link-Liste
 ##    Diese Links werden in jede Sidebar übernommen, sind also überall präsent.
 ##    Hier nur ein Beispiel mit zwei Links, da der Standardwert leer ist:
 ## m²_fixlinks:
@@ -109,13 +124,19 @@ DEMO_MDM_ROOT_YAML = """
 ##    - link: 'https://tabula.info'
 ##      title: 'Public Displays'
 ##      hover: Klick mich!
-      
+##
     
-## 3. Flags 
+## 4a. Flags 
 ##
 ## Soll im root-Verzeichenis ("hier") eine sitemap.html erzeugt werden?
 # m²_generate_sitemap: False
+# m²_generate_sidebar: False
+# m²_verbose: False
 
+
+## 4b. Flags, die nur zum Tragen kommen, wenn in einer md-Datei dieses Flag nicht gesetzt wird
+# m²_suppress_pdf: False
+# m²_generate_slides: False
 ## 
 """
 

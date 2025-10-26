@@ -17,20 +17,18 @@ import sys
 from pathlib import Path
 from argparse import ArgumentParser
 
-# mdmaschine worx 
+# MDMWRX
 import mdmwrx.tasks
-from mdmwrx.sidebar import make_sidebar_file
+import mdmwrx.task_file
+from mdmwrx.task_sidefiles import make_sidebar_file
 from mdmwrx.config import get_config_obj
 from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yaml
-
-# get_root_info, make_sitemap_file, get_folder_filename_title_yaml, \
-
 
 # ############# #
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.RC10 von 2025-10-23')
+print('mdmachine Version 1.0.RC11 von 2025-10-26')
 
 Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
 Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
@@ -127,11 +125,11 @@ if len(sys.argv) > 1:
                                  do_recursive=mdm_args.recursive_flag)
             
         if flag_is_source_file:
-            erfolg, _ = mdmwrx.tasks.handle_file(config_obj, sourcefile, do_force=mdm_args.force_flag)
+            erfolg, _ = mdmwrx.task_file.handle_file(config_obj, sourcefile, do_force=mdm_args.force_flag)
             if not erfolg:
                 print(f'Datei {sourcefile.name} nicht gefunden oder keine Markdowndatei\n Optionen: <Dateiname> | --polling')
             else:
-                mdmwrx.tasks.alte_Dateien_entfernen(startpath)
+                mdmwrx.task_file.alte_Dateien_entfernen(startpath)
             
 else:
     print(f'''
