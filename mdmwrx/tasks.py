@@ -49,8 +49,12 @@ def handle_update(c_o, path, force_flag, poll_flag):
                     time.sleep(5)
                 except KeyboardInterrupt:
                     print("\nPolling abgebrochen. Kein Problem...")
+                    alte_Dateien_entfernen(path, True, True)
+
                     exit()
-        
+    print("Schritt 4:\n\tAlte Dateien löschen!\n")
+    alte_Dateien_entfernen(path, True, True, True)
+
     
 def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
                indent="", be_quiet=False):

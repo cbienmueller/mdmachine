@@ -165,7 +165,8 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     return True, 1
 
 
-def alte_Dateien_entfernen(path, force_all=False, do_recursive=False):
+def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_temps=False):
+    temp_counter=0
     for oldfile in path.iterdir():
         if oldfile.is_file():
             if oldfile.stem.startswith("_mdm_aged_"):
@@ -185,7 +186,11 @@ def alte_Dateien_entfernen(path, force_all=False, do_recursive=False):
                         oldfile.rename(path / f'_mdm_aged_{oldfile.name[9:]}')
                     except FileNotFoundError:
                         pass
-            
+            elif remove_temps and oldfile.stem.startswith("_mdmtemp_"):
+                oldfile.unlink(missing_ok=True)
+                temp_counter += 1
+    if temp_counter:
+        print(f'{temp_counter} temporäre Dateien gelöscht.')
 
 def get_meta_from_mdyaml(c_o, mdfile):
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
