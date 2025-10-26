@@ -72,11 +72,11 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
             print("")
             print(f'src>: {sourcefile.name: <38} ist neuer als '
                   'der Beginn der letzten Konvertierung. Konvertiere sofort!')
-        elif htmlfile.stat().st_mtime < sourcefile.stat().st_mtime + 3:
-            print(f'>trg: {htmlfile.name: <38} älter als Quelldatei {sourcefile.name} + 3 Sekunden.')
-            while sourcefile.stat().st_mtime + 3 > int(time.time()):
-                wartezeit = int(min(5 - (time.time() - sourcefile.stat().st_mtime), 4))
-                print("Zu frisch - warte für " + str(wartezeit) + "s")
+        elif htmlfile.stat().st_mtime < sourcefile.stat().st_mtime + 2:
+            print(f'>trg: {htmlfile.name: <38} älter als Quelldatei {sourcefile.name} + 2 Sekunden.')
+            while sourcefile.stat().st_mtime + 2 > int(time.time()):
+                wartezeit = int(min(4 - (time.time() - sourcefile.stat().st_mtime), 3))
+                print("Zu frisch - warte noch " + str(wartezeit) + "s")
                 try:
                     time.sleep(wartezeit)  # verhindert Doppeltkonvertierungen und Synchronisationschaos...
                 except KeyboardInterrupt:
@@ -166,7 +166,7 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
 
 
 def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_temps=False):
-    temp_counter=0
+    temp_counter = 0
     for oldfile in path.iterdir():
         if oldfile.is_file():
             if oldfile.stem.startswith("_mdm_aged_"):
@@ -191,6 +191,7 @@ def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_tem
                 temp_counter += 1
     if temp_counter:
         print(f'{temp_counter} temporäre Dateien gelöscht.')
+
 
 def get_meta_from_mdyaml(c_o, mdfile):
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt

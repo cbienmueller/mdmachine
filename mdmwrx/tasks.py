@@ -127,13 +127,13 @@ def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False
         if k:
             timer = TIMERSTARTWERT
             if do_recursive:
-                print('\nNun wird der Verzeichnisbaum alle 8s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
+                print('\nNun wird der Verzeichnisbaum alle 10s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
             else:
-                print('\nNun wird das Verzeichnis alle 8s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
+                print('\nNun wird das Verzeichnis alle 10s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
         else:
             try:
-                time.sleep(8)
-                timer -= 8
+                time.sleep(10)
+                timer -= 10
                 if timer <= 0:
                     alte_Dateien_entfernen(startpath, False, do_recursive)
                     timer = TIMERSTARTWERT
