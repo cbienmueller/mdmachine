@@ -107,7 +107,8 @@ def make_sitemap_n_timeline(c_o, root_path):
     # lang kommt nur vom root-mdm_dir.yaml
     
     output = SIDEBAR_barebone.format(lang, 'Sitemap', c_o.cssfile_main, c_o.cssfile_sb, 
-        f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
+                                     f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n'
+                                     if c_o.inc_main_css else "")
     output += content
     output += SIDEBAR_fine
     overwrite_if_changed(c_o, sm_path, output)
@@ -118,7 +119,8 @@ def make_sitemap_n_timeline(c_o, root_path):
     timeline_list.sort(key=lambda tup: tup[0], reverse=True)        # sorts in place
     
     output = TIMELINE_barebone.format(lang, 'TimeLine', c_o.cssfile_main, c_o.cssfile_sb, 
-        f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
+                                      f'<link rel="Stylesheet" type="text/css" href="{c_o.inc_main_css}">\n'
+                                      if c_o.inc_main_css else "")
     for d, h in timeline_list[:16]:
         output += h
     output += TIMELINE_fine
@@ -190,7 +192,8 @@ def make_sidebar_file(c_o, path, do_recursive=False):
     navi_content, lang, ri = get_side_navi(c_o, path)
     relpath2r = relpath_2_root(path)
     output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb, 
-        f'<link rel="Stylesheet" type="text/css" href="{relpath2r}/{c_o.inc_main_css}">\n' if c_o.inc_main_css else "")
+                                      f'<link rel="Stylesheet" type="text/css" href="{relpath2r}/{c_o.inc_main_css}">\n'
+                                      if c_o.inc_main_css else "")
     output += navi_content               # komplette Navigation
     output += '\t<hr>\n'                 # Trennlinie
     

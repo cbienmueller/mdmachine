@@ -6,7 +6,7 @@
 """
 
 # Batteries
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -37,7 +37,8 @@ class Config_Obj:
     flag_verbose: bool          # für Ausgabe von Debug-Informationen
     flag_sup_pdf: bool          # PDF-Erzeugung unterdrücken
     flag_gen_slides: bool       # Slides erzeugen?
-    
+    lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
+
 
 def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
     rootpath = startpath

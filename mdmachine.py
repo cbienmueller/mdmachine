@@ -24,59 +24,85 @@ from mdmwrx.task_sidefiles import make_sidebar_file
 from mdmwrx.config import get_config_obj
 from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yaml
 
-# ############# #
-# ### START ### #
-# ############# #
+HELP = '''
+    konvertiert Markdown-Datei(en)
+        * mit Präprozessor (inkl. Ausführen von Codeblöcken und Mermaid-Code)
+        * und biec-Customizing (CSS)
+        * via pandoc in HTML und 
+        * via Chrome in Din-A4-PDF, wenn die md-Datei neuer als die HTML-Zieldatei ist.
+        * Mit m²_generate_slides im YAML-Block wird zusätzlich ein SLIDES-PDF erzeugt.
+    Aufruf alternativ mit...
+        --all               Zum einmaligen Konvertieren aller Dateien des akt. Verzeichnisses.
+        --poll              Für dauerhaftes Polling des akt. Verzeichnisses.*
+        --sidebar           Zum Erzeugen einer neuen _mdm_sidebar_.html.
+        <datei.md>          Zum Konvertieren genau einer Quell-Datei.
+        --force <datei.md>  Erzwingt diese Konvertierung, auch wenn Datei unverändert.
+        --help              Automatisch generierte Hilfe zu den Parametern.
+        --recursive         Bearbeitet auch Unterverzeichnisse
+        --demodirinfo       Gibt eine inaktive, kommentierte mdm_dir.yaml.blank zum Editieren aus.
+        --update            Prüft ob im aktuellen Verzeichnis mdm_root.yaml steht.
+                            Wenn ja, wird der ganze Verzeichnisbaum ab hier nach unten
+                            konvertiert, sidebars und ggf. eine sitemap angelegt.
+        
+        *   Verzeichnisbearbeitung mit polling ohne Unterverzeichnisse. 
+            _dateiname_.md wird immer übersprungen (gut für reine include-Dateien) wenn nicht explizit aufgerufen.
+        
+    DryRun ("was wäre wenn") im Verzeichnis\n    {}:
+        '''
 
-print('mdmachine Version 1.0.RC11 von 2025-10-26')
 
-Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
-Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
+def start_your_engines():
+    Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
+    Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
 
-# Pfad, in dem Medien-Dateien liegen, hauptsächlich CSS-Includes
-medien_path: Path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
-print(f'Medienverzeichnis:  {medien_path}')
+    # Pfad, in dem Medien-Dateien liegen, hauptsächlich CSS-Includes
+    medien_path: Path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
+    print(f'Medienverzeichnis:  {medien_path}')
 
-# Arbeitspfad ("von wo wurde mdmachine aufgerufen, wo liegen die Dateien")
-startpath = Path(".").resolve()
-config_obj = get_config_obj(startpath, medien_path)  # Klärt z.B. wo root liegt und liest dort abgelegte Konfig ein
+    # Arbeitspfad ("von wo wurde mdmachine aufgerufen, wo liegen die Dateien")
+    startpath = Path(".").resolve()
+    config_obj = get_config_obj(startpath, medien_path)  # Klärt z.B. wo root liegt und liest dort abgelegte Konfig ein
 
-do_sidebar = False
-parser = ArgumentParser()
+    parser = ArgumentParser()
 
-parser.add_argument("-v", "--verbosity", dest="verbosity_flag",
-                    action="store_const", const=True, default=False,
-                    help="Setze verbosity hoch für Zusatzinfos")                    
-parser.add_argument("-f", "--force", dest="force_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Erzwinge Konvertierung")
-parser.add_argument("-a", "--all", dest="all_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Bearbeite ganzes Verzeichnis")
-parser.add_argument("-s", "--sidebar", dest="side_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Erstelle eine _mdm_sidebar_.html. Vorhandene mdm_dir.yaml wird ausgewertet!")
-parser.add_argument("-p", "--poll", dest="poll_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Überprüfe Verzeichnis fortlaufend auf Änderungen")
-parser.add_argument("-r", "--recursive", dest="recursive_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="mit Unterverzeichnissen")
-parser.add_argument("-u", "--update", dest="update_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Update für den ganzen Verzeichnisbaum ab `root`:"
-                         " Konvertiere alle geänderten md-Dateien, erzeuge sidebars und eine sitemap")
-parser.add_argument("--demo_mdm_dir", dest="demo_mdm_dir_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Gibt eine kommentierte mdm_dir.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
-parser.add_argument("--demo_mdm_root", dest="demo_mdm_root_flag", 
-                    action="store_const", const=True, default=False, 
-                    help="Gibt eine kommentierte mdm_root.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
-parser.add_argument("file_names", type=str, nargs="*")
+    parser.add_argument("-v", "--verbosity", dest="verbosity_flag",
+                        action="store_const", const=True, default=False,
+                        help="Setze verbosity hoch für Zusatzinfos")                    
+    parser.add_argument("-f", "--force", dest="force_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Erzwinge Konvertierung")
+    parser.add_argument("-a", "--all", dest="all_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Bearbeite ganzes Verzeichnis")
+    parser.add_argument("-s", "--sidebar", dest="side_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Erstelle eine _mdm_sidebar_.html. Vorhandene mdm_dir.yaml wird ausgewertet!")
+    parser.add_argument("-p", "--poll", dest="poll_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Überprüfe Verzeichnis fortlaufend auf Änderungen")
+    parser.add_argument("-r", "--recursive", dest="recursive_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="mit Unterverzeichnissen")
+    parser.add_argument("-u", "--update", dest="update_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Update für den ganzen Verzeichnisbaum ab `root`:"
+                             " Konvertiere alle geänderten md-Dateien, erzeuge sidebars und eine sitemap")
+    parser.add_argument("--demo_mdm_dir", dest="demo_mdm_dir_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Gibt eine kommentierte mdm_dir.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
+    parser.add_argument("--demo_mdm_root", dest="demo_mdm_root_flag", 
+                        action="store_const", const=True, default=False, 
+                        help="Gibt eine kommentierte mdm_root.yaml.blank zum Editieren aus (ggf. in übergebenem Verzeichnis)")
+    parser.add_argument("file_names", type=str, nargs="*")
 
-mdm_args = parser.parse_args()
+    mdm_args = parser.parse_args()
 
-if len(sys.argv) > 1:
+    if len(sys.argv) <= 1:
+        print(HELP.format(startpath))
+        mdmwrx.tasks.handle_dir(config_obj, startpath, dryrun=True)
+        print("Es wurde keine Konvertierung durchgeführt, da kein Parameter angegeben wurde.")
+        exit(0)
+
     if not config_obj.flag_verbose:
         config_obj.flag_verbose = mdm_args.verbosity_flag
 
@@ -131,33 +157,11 @@ if len(sys.argv) > 1:
             else:
                 mdmwrx.task_file.alte_Dateien_entfernen(startpath)
             
-else:
-    print(f'''
-konvertiert Markdown-Datei(en)
-    * mit Präprozessor (inkl. Ausführen von Codeblöcken und Mermaid-Code)
-    * und biec-Customizing (CSS)
-    * via pandoc in HTML und 
-    * via Chrome in Din-A4-PDF, wenn die md-Datei neuer als die HTML-Zieldatei ist.
-    * Mit m²_generate_slides im YAML-Block wird zusätzlich ein SLIDES-PDF erzeugt.
-Aufruf alternativ mit...
-    --all               Zum einmaligen Konvertieren aller Dateien des akt. Verzeichnisses.
-    --poll              Für dauerhaftes Polling des akt. Verzeichnisses.*
-    --sidebar           Zum Erzeugen einer neuen _mdm_sidebar_.html.
-    <datei.md>          Zum Konvertieren genau einer Quell-Datei.
-    --force <datei.md>  Erzwingt diese Konvertierung, auch wenn Datei unverändert.
-    --help              Automatisch generierte Hilfe zu den Parametern.
-    --recursive         Bearbeitet auch Unterverzeichnisse
-    --demodirinfo       Gibt eine inaktive, kommentierte mdm_dir.yaml.blank zum Editieren aus.
-    --update            Prüft ob im aktuellen Verzeichnis mdm_root.yaml steht.
-                        Wenn ja, wird der ganze Verzeichnisbaum ab hier nach unten
-                        konvertiert, sidebars und ggf. eine sitemap angelegt.
-    
-    *   Verzeichnisbearbeitung mit polling ohne Unterverzeichnisse. 
-        _dateiname_.md wird immer übersprungen (gut für reine include-Dateien) wenn nicht explizit aufgerufen.
-    
-DryRun ("was wäre wenn") im Verzeichnis\n    {startpath}:
-    ''')
-    mdmwrx.tasks.handle_dir(config_obj, startpath, dryrun=True)
-    print("Es wurde keine Konvertierung durchgeführt, da kein Parameter angegeben wurde.")
-    
- 
+
+# ############# #
+# ### START ### #
+# ############# #
+
+print('mdmachine Version 1.0.RC11 von 2025-10-26')
+start_your_engines()
+        

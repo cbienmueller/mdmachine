@@ -11,10 +11,10 @@ from mdmwrx.tools import debug
     Dabei wird so oder so nur ein Docker-Aufruf gemacht.
 """
 
-browserengine = 'google-chrome'
-# browserengine = 'brave-browser'
+BROWSER_ENGINE = 'google-chrome'
+# BROWSER_ENGINE = 'brave-browser'
 
-conv_verbose = True
+CONVERT_VERBOSE = True
 
 
 # SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
@@ -51,7 +51,7 @@ DYN_HEADER = """<!-- Dyn_header.txt: Wird je nach Konfig. erstellt, benutzt, gel
 
 
 def dbg(ort, variable, wert, comment=""):
-    if conv_verbose:
+    if CONVERT_VERBOSE:
         print(f'''In {ort}: {
               variable} = {
               wert} {
@@ -83,7 +83,7 @@ def do_convert(cd):  # cd: ConvertData
         erfolg = convert2slides(cd)
 
     if not erfolg:
-        if not conv_verbose:
+        if not CONVERT_VERBOSE:
             # Aufräumen...
             for tf in cd.aktpath.glob(f'{cd.tmp_filestem}*'):
                 try:
@@ -317,7 +317,7 @@ def convert2A4pdf(cd):
     print(f'Konvertiere {cd.mymeta.title} nun in A4-PDF')
     
     dotodo_go = [
-        browserengine,  
+        BROWSER_ENGINE,  
         '--no-sandbox', '--headless=true', '--disable-gpu', '--disable-search-engine-choice-screen',
         '--run-all-compositor-stages-before-draw', '--no-pdf-header-footer',
         '--no-margins', '--virtual-time-budget=400000',
@@ -358,7 +358,7 @@ def convert2slides(cd):
         slides_pdf_filename = f'{cd.tmp_filestem}_SLIDES{s_format_ext}.pdf'
         
         slides_todo = [
-            browserengine, 
+            BROWSER_ENGINE, 
             '--no-sandbox', '--headless', '--disable-gpu', '--disable-search-engine-choice-screen',
             '--run-all-compositor-stages-before-draw', '--print-to-pdf-no-header',
             '--no-margins', '--virtual-time-budget=400000',

@@ -46,10 +46,6 @@ class ConvertData:
     mymeta: MdYamlMeta
 
 
-# Böse globale Variable
-lastconverted = {}
-
-
 def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     """gibt (bool erfolg, int anzahl) zurück"""
     flag_do_convert = False
@@ -66,22 +62,16 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     
     htmlfile = path / (sourcefile.stem + ".html")
     if htmlfile.exists():
-        lasttime = lastconverted.get(sourcefile.absolute(), 0)
+        lasttime = c_o.lastconverted.get(sourcefile.absolute(), 0)
         if lasttime and lasttime < sourcefile.stat().st_mtime:
             flag_do_convert = True
             print("")
             print(f'src>: {sourcefile.name: <38} ist neuer als '
                   'der Beginn der letzten Konvertierung. Konvertiere sofort!')
         elif htmlfile.stat().st_mtime < sourcefile.stat().st_mtime + 2:
-            print(f'>trg: {htmlfile.name: <38} älter als Quelldatei {sourcefile.name} + 2 Sekunden.')
+            print(f'>trg: {htmlfile.name: <38} älter als Quelldatei {sourcefile.name}.')
             while sourcefile.stat().st_mtime + 2 > int(time.time()):
-                wartezeit = int(min(4 - (time.time() - sourcefile.stat().st_mtime), 3))
-                print("Zu frisch - warte noch " + str(wartezeit) + "s")
-                try:
-                    time.sleep(wartezeit)  # verhindert Doppeltkonvertierungen und Synchronisationschaos...
-                except KeyboardInterrupt:
-                    print("\nWartezeit abgebrochen. Kein Problem...")
-                    exit()
+                time.sleep(1)
             flag_do_convert = True
 
         elif do_print:
@@ -109,7 +99,7 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     tmp_preproc_file = path / f'{tmp_filestem}_preproc.md'
     tmp_concat_file = path / f'{tmp_filestem}_concat.md'
     # print("vermerke ", sourcefile.absolute(), time.time())
-    lastconverted[sourcefile.absolute()] = time.time()
+    c_o.lastconverted[sourcefile.absolute()] = time.time()
     
     print("Präprozessor...")
     do_pre_proc(sourcefile, tmp_preproc_file)
@@ -166,12 +156,14 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
 
 
 def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_temps=False):
+    delled_old=False
     temp_counter = 0
     for oldfile in path.iterdir():
         if oldfile.is_file():
             if oldfile.stem.startswith("_mdm_aged_"):
                 print(f"    'remove' vor-vorherige Version ({oldfile.name}).")
                 oldfile.unlink(missing_ok=True)
+                delled_old=True
         elif do_recursive and oldfile.is_dir():
             alte_Dateien_entfernen(oldfile, force_all, do_recursive)
     for oldfile in path.iterdir():
@@ -181,6 +173,10 @@ def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_tem
                     print(f"    'remove' vorherige Version ({oldfile.name}).")
                     oldfile.unlink(missing_ok=True)
                 else:
+                    if delled_old:
+                        print("    -> Pause zwischen remove und aging...")
+                        time.sleep(3)   # Feigheit vor der Cloudsynchronisation, aber nur einmal
+                        delled_old = False
                     print(f"    'aging'  vorherige Version ({oldfile.name}).")
                     try:
                         oldfile.rename(path / f'_mdm_aged_{oldfile.name[9:]}')
