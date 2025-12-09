@@ -145,7 +145,7 @@ def start_your_engines():
             continue
 
         if mdm_args.poll_flag:                                                                          # kommt nicht zurück
-            mdmwrx.tasks.do_poll(config_obj, 
+            mdmwrx.tasks.handle_polling(config_obj, 
                                  startpath,
                                  do_force=mdm_args.force_flag,
                                  do_recursive=mdm_args.recursive_flag)
@@ -162,6 +162,6 @@ def start_your_engines():
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0 von 2025-11-18')
+print('mdmachine Version 1.0.1 von 2025-12-09')
 start_your_engines()
         

@@ -5,6 +5,7 @@ die dort über Kommandozeilenparameter ausgewählt wurden.
 
 # Batteries included
 import time
+import uuid
 
 # MDMWRX
 from mdmwrx.task_sidefiles import make_sidebar_file, make_sitemap_n_timeline
@@ -107,13 +108,19 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
     return konvertierte
 
 
-def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False):
+def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False):
+    poll_flag_filename = "_mdm_poll_" + uuid.uuid4().hex + ".flag"
     print('Funktion: Polling')
+    for f in startpath.glob('_mdm_poll_*.flag'):
+        print(f"Fremdes polling flag gefunden! {f.name} muss gelöscht werden ")
+        f.unlink()
+    with (startpath / poll_flag_filename).open('w') as f:
+        f.write('polling')
     TIMERSTARTWERT = 30  # Sekunden, bis auch alte Backupdateien gelöscht werden
     timer = TIMERSTARTWERT
     be_quiet = False
     do_print = True
-    while True:
+    while (startpath / poll_flag_filename).is_file():   # Ende, wenn MEIN Flag gelöscht wird!
         k = handle_dir(c_o, 
                        startpath, 
                        do_print=do_print,
@@ -142,4 +149,8 @@ def do_poll(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False
                 alte_Dateien_entfernen(startpath, True, do_recursive)
                 print("Fertig & beendet (wegen KeyboardInterrupt)")
                 exit()
+
+    print('Mein Polling-Flag wurde gelöscht!\nEnde des Programms.')
+    alte_Dateien_entfernen(startpath, True, do_recursive)
+    exit()
 

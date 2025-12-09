@@ -156,14 +156,14 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
 
 
 def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_temps=False):
-    delled_old=False
+    delled_old = False
     temp_counter = 0
     for oldfile in path.iterdir():
         if oldfile.is_file():
             if oldfile.stem.startswith("_mdm_aged_"):
                 print(f"    'remove' vor-vorherige Version ({oldfile.name}).")
                 oldfile.unlink(missing_ok=True)
-                delled_old=True
+                delled_old = True
         elif do_recursive and oldfile.is_dir():
             alte_Dateien_entfernen(oldfile, force_all, do_recursive)
     for oldfile in path.iterdir():
