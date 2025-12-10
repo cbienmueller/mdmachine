@@ -114,6 +114,8 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
     for f in startpath.glob('_mdm_poll_*.flag'):
         print(f"Fremdes polling flag gefunden! {f.name} muss gelöscht werden ")
         f.unlink()
+        print("Warte pauschal 10s, dass eventuelle Konvertierungen beendet werden...")
+        time.sleep(10)
     with (startpath / poll_flag_filename).open('w') as f:
         f.write('polling')
     TIMERSTARTWERT = 30  # Sekunden, bis auch alte Backupdateien gelöscht werden
@@ -148,6 +150,7 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
                 print("\nPause abgebrochen. Kein Problem, lösche noch eventuelle mdm_old-Dateien.")
                 alte_Dateien_entfernen(startpath, True, do_recursive)
                 print("Fertig & beendet (wegen KeyboardInterrupt)")
+                Path(startpath / poll_flag_filename).unlink()      # jetzt belege ich das Verzeichnis nicht mehr...
                 exit()
 
     print('Mein Polling-Flag wurde gelöscht!\nEnde des Programms.')

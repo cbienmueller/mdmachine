@@ -162,6 +162,6 @@ def start_your_engines():
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.1 von 2025-12-09')
+print('mdmachine Version 1.0.1b von 2025-12-10')
 start_your_engines()
         
