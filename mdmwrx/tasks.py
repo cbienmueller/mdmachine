@@ -116,6 +116,9 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
         f.unlink()
         print("Warte pauschal 10s, dass eventuelle Konvertierungen beendet werden...")
         time.sleep(10)
+    # Sauberer Start
+    alte_Dateien_entfernen(startpath, force_all=True, do_recursive=do_recursive, remove_temps=True)
+    
     with (startpath / poll_flag_filename).open('w') as f:
         f.write('polling')
     TIMERSTARTWERT = 30  # Sekunden, bis auch alte Backupdateien gelöscht werden
