@@ -9,7 +9,8 @@ import uuid
 
 # MDMWRX
 from mdmwrx.task_sidefiles import make_sidebar_file, make_sitemap_n_timeline
-from mdmwrx.task_file import handle_file, alte_Dateien_entfernen
+from mdmwrx.task_file import handle_file
+from mdmwrx.tools import alte_Dateien_entfernen
 # from mdmwrx.tools import debug
 
 
@@ -50,13 +51,12 @@ def handle_update(c_o, path, force_flag, poll_flag):
                     time.sleep(5)
                 except KeyboardInterrupt:
                     print("\nPolling abgebrochen. Kein Problem...")
-                    alte_Dateien_entfernen(path, True, True)
-
+                    alte_Dateien_entfernen(path, 0, True)
                     exit()
     print("Schritt 4:\n\tAlte Dateien löschen!\n")
-    alte_Dateien_entfernen(path, True, True, True)
-
+    alte_Dateien_entfernen(path, 0, True, True)
     
+
 def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
                indent="", be_quiet=False):
     konvertierte = 0
@@ -87,17 +87,17 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
            (path / "_mdm_sidebar_.html").exists():
             make_sidebar_file(c_o, path)
         if do_recursive:
-            alte_Dateien_entfernen(path)
-        else:
+            alte_Dateien_entfernen(path, c_o.poll_generation - 2)
+        elif not c_o.poll_generation:   # polling setzt generation auf positiven Wert, dann wird woanders gewartet!
             print("Kurze Ruhepause für die Cloud, danach Löschen alter Dateien.")
             try:
                 time.sleep(10)   # Abstand zwischen Doppelkonvertierungen um Cloudsync. zu schonen
             except KeyboardInterrupt:
                 print("\nPause abgebrochen. Kein Problem, lösche noch eventuelle mdm_old-Dateien.")
-                alte_Dateien_entfernen(path, True)
+                alte_Dateien_entfernen(path, 0)
                 print("Fertig & beendet (wegen KeyboardInterrupt)")
                 exit()
-            alte_Dateien_entfernen(path)
+            alte_Dateien_entfernen(path, c_o.poll_generation - 2)
         
     if not be_quiet:
         if subdirs:
@@ -117,11 +117,11 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
         print("Warte pauschal 10s, dass eventuelle Konvertierungen beendet werden...")
         time.sleep(10)
     # Sauberer Start
-    alte_Dateien_entfernen(startpath, force_all=True, do_recursive=do_recursive, remove_temps=True)
-    
+    alte_Dateien_entfernen(startpath, 0, do_recursive=do_recursive, remove_temps=True)
+    c_o.poll_generation = 2  # virtueller Vorgänger > 0, den vor der Action wird poll_generation noch inkrementiert!
     with (startpath / poll_flag_filename).open('w') as f:
         f.write('polling')
-    TIMERSTARTWERT = 30  # Sekunden, bis auch alte Backupdateien gelöscht werden
+    TIMERSTARTWERT = 20  # Sekunden, bis auch alte Backupdateien gelöscht werden
     timer = TIMERSTARTWERT
     be_quiet = False
     do_print = True
@@ -137,7 +137,10 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
         do_print = False
         be_quiet = True  # volle Ausgabe max nur beim ersten Mal
         if k:
-            timer = TIMERSTARTWERT
+            c_o.poll_generation += 1          
+            # also sind 3 Generationen noch auf der Festplatte: -1, -2 und -3! -0 wird als nächstes angelegt
+            alte_Dateien_entfernen(startpath, c_o.poll_generation - 3, do_recursive)  # jetzt also noch -1 und -2
+            timer = TIMERSTARTWERT / 2
             if do_recursive:
                 print('\nNun wird der Verzeichnisbaum alle 3s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
             else:
@@ -145,18 +148,24 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
         else:
             try:
                 time.sleep(3)
-                timer -= 3
-                if timer <= 0:
-                    alte_Dateien_entfernen(startpath, False, do_recursive)
-                    timer = TIMERSTARTWERT
+                if c_o.poll_generation > 2:  # Denn bei 2 ist noch nix konvertiert worden...
+                    timer -= 3
+                    if timer <= 0:
+                        anzahl, nextanzahl = alte_Dateien_entfernen(startpath, c_o.poll_generation - 2, do_recursive)  
+                        # jetzt nur noch -1 auf der Platte
+                        c_o.poll_generation += 1  # skip, um später weiter zu löschen
+                        if not nextanzahl:  # oops, -1 ist leer! beim letzten Mal schon geskipped?
+                            c_o.poll_generation = 2   # Neustart
+                            # print("    -> Polling-Generation-Zähler zurückgesetzt.")
+                        timer = TIMERSTARTWERT
             except KeyboardInterrupt:
                 print("\nPause abgebrochen. Kein Problem, lösche noch eventuelle mdm_old-Dateien.")
-                alte_Dateien_entfernen(startpath, True, do_recursive)
+                alte_Dateien_entfernen(startpath, 0, do_recursive)  # Alle löschen
                 print("Fertig & beendet (wegen KeyboardInterrupt)")
                 (startpath / poll_flag_filename).unlink()      # jetzt belege ich das Verzeichnis nicht mehr...
                 exit()
 
     print('Mein Polling-Flag wurde gelöscht!\nEnde des Programms.')
-    alte_Dateien_entfernen(startpath, True, do_recursive)
+    alte_Dateien_entfernen(startpath, 0, do_recursive)  # Alle löschen
     exit()
 

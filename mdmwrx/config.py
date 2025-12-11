@@ -11,13 +11,12 @@ from pathlib import Path
 from shutil import which
 
 
-
-
 # MDMWRX
 from mdmwrx.yamlread import get_yaml_dict_from_yaml
 
 
-BROWSER_ENGINES = ['google-chrome', 'chromium', 'brave-browser']
+BROWSER_ENGINES = ['google-chrome', 'chromium', 'brave-browser']  # Der erste (mit which) gefundene wird benutzt!
+
 
 @dataclass
 class Config_Obj:  
@@ -37,13 +36,17 @@ class Config_Obj:
     inc_css_list: list[str]     # List of Strings als (zu root) relative css-Pfade
     inc_main_css: str           # Eine CSS-Datei, die auch für Sidefiles verwendet wird (-> Farbdefinitionen)
     lang: str                   # HTML-lang-Parameter
-    flag_gen_sitemap: bool      # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
-    flag_gen_sidebar: bool      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
-    #                           #   mit html-Dateien geführt werden?
-    flag_verbose: bool          # für Ausgabe von Debug-Informationen
-    flag_sup_pdf: bool          # PDF-Erzeugung unterdrücken
-    flag_gen_slides: bool       # Slides erzeugen?
+
+    # nun fakultative, vorbelegte Attribute
+    flag_gen_sitemap: bool = False     # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
+    flag_gen_sidebar: bool = False     # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
+    #                                  #   mit html-Dateien geführt werden?
+    flag_verbose: bool = False         # für Ausgabe von Debug-Informationen
+    flag_sup_pdf: bool = False         # PDF-Erzeugung unterdrücken
+    flag_gen_slides: bool = False      # Slides erzeugen?
+    poll_generation: int = 0    # zählt für mdm_old durch, so dass keine weitere Umbenennung nötig ist
     lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
+
 
 def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
     # Schritt 1: Browser-Engine checken
@@ -74,12 +77,7 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
             [],
             [],
             "",
-            "de-DE",
-            False,
-            False,
-            False,
-            False,
-            False
+            "de-DE"
         )
 
     flag_dir_is_root = (relpath == ".")

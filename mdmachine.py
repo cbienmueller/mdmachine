@@ -13,16 +13,16 @@
 
 # Batteries included
 import sys
-
 from pathlib import Path
 from argparse import ArgumentParser
+
 
 # MDMWRX
 import mdmwrx.tasks
 import mdmwrx.task_file
 from mdmwrx.task_sidefiles import make_sidebar_file
 from mdmwrx.config import get_config_obj
-from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yaml
+from mdmwrx.tools import debug, write_demo_mdm_dir_yaml, write_demo_mdm_root_yaml, warte_entferne_exit
 
 HELP = '''
     konvertiert Markdown-Datei(en)
@@ -138,7 +138,7 @@ def start_your_engines():
             mdmwrx.tasks.handle_dir(config_obj, startpath, 
                                     do_sidebar=mdm_args.side_flag, do_force=mdm_args.force_flag,
                                     do_recursive=mdm_args.recursive_flag)
-            continue
+            warte_entferne_exit(startpath, 0)
             
         if mdm_args.side_flag:
             make_sidebar_file(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
@@ -151,17 +151,17 @@ def start_your_engines():
                                         do_recursive=mdm_args.recursive_flag)
             
         if flag_is_source_file:
-            erfolg, _ = mdmwrx.task_file.handle_file(config_obj, sourcefile, do_force=mdm_args.force_flag)
+            erfolg, count = mdmwrx.task_file.handle_file(config_obj, sourcefile, do_force=mdm_args.force_flag)
             if not erfolg:
                 print(f'Datei {sourcefile.name} nicht gefunden oder keine Markdowndatei\n Optionen: <Dateiname> | --polling')
-            else:
-                mdmwrx.task_file.alte_Dateien_entfernen(startpath)
+            elif count:
+                warte_entferne_exit(startpath, config_obj.poll_generation)
             
 
 # ############# #
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.1c von 2025-12-11')
+print('mdmachine Version 1.0.2 von 2025-12-11')
 start_your_engines()
         

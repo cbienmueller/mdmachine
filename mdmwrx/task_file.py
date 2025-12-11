@@ -16,7 +16,7 @@ from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.config import Config_Obj, relpath_2_root
-# from mdmwrx.tools import debug
+from mdmwrx.tools import alte_Dateien_vorhanden   # debug
 
 
 @dataclass
@@ -125,14 +125,19 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
         endungen.append(f'_SLIDES_{s_format}.html')
         endungen.append(f'_SLIDES_{s_format}.pdf')
         
-    for endung in endungen:
+    if not c_o.poll_generation:  # single shot Anwendung
+        c_o.poll_generation = 100
+        while alte_Dateien_vorhanden(path, c_o.poll_generation):
+            c_o.poll_generation += 1
 
+    for endung in endungen:
         # uralte immer entfernen (sollten anderweitig bereits entfernt worden sein)
         (path / f'_mdm_old_{sourcefile.stem}{endung}').unlink(missing_ok=True)
+        (path / f'_mdm_aged_{sourcefile.stem}{endung}').unlink(missing_ok=True)
 
         # alte immer umbenennen, auch wenn sie nicht ersetzt werden (dann müssen sie trotzdem weg)
         try:
-            (path / f'{sourcefile.stem}{endung}').rename(path / f'_mdm_old_{sourcefile.stem}{endung}')
+            (path / f'{sourcefile.stem}{endung}').rename(path / f'_mdm_old-{c_o.poll_generation}_{sourcefile.stem}{endung}')
         except FileNotFoundError:
             pass
 
@@ -153,45 +158,6 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
         except Exception:
             pass
     return True, 1
-
-
-def alte_Dateien_entfernen(path, force_all=False, do_recursive=False, remove_temps=False):
-    delled_old = False
-    temp_counter = 0
-    anycounter = 0
-    for oldfile in path.iterdir():
-        if oldfile.is_file():
-            if oldfile.stem.startswith("_mdm_aged_"):
-                print(f"    'remove' vor-vorherige Version ({oldfile.name}).")
-                oldfile.unlink(missing_ok=True)
-                delled_old = True
-                anycounter +=1
-        elif do_recursive and oldfile.is_dir():
-            anycounter += alte_Dateien_entfernen(oldfile, force_all, do_recursive)
-    for oldfile in path.iterdir():
-        if oldfile.is_file():
-            if oldfile.stem.startswith("_mdm_old_"):
-                if force_all:
-                    print(f"    'remove' vorherige Version ({oldfile.name}).")
-                    oldfile.unlink(missing_ok=True)
-                    anycounter +=1
-                else:
-                    if delled_old:
-                        print("    -> Pause zwischen remove und aging...")
-                        time.sleep(3)   # Feigheit vor der Cloudsynchronisation, aber nur einmal
-                        delled_old = False
-                    print(f"    'aging'  vorherige Version ({oldfile.name}).")
-                    try:
-                        oldfile.rename(path / f'_mdm_aged_{oldfile.name[9:]}')
-                        anycounter +=1
-                    except FileNotFoundError:
-                        pass
-            elif remove_temps and oldfile.stem.startswith("_mdmtemp_"):
-                oldfile.unlink(missing_ok=True)
-                temp_counter += 1
-    if temp_counter:
-        print(f'{temp_counter} temporäre Dateien gelöscht.')
-    return anycounter
 
 
 def get_meta_from_mdyaml(c_o, mdfile):

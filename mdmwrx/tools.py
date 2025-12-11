@@ -1,3 +1,7 @@
+# Batteries
+
+from time import sleep
+
 """ debug druckt ggf.
             first: param1, param2
     aus
@@ -15,6 +19,46 @@ def debug(c_o, first, *params):
                 params_seperator = ", "
 
         print(output)
+
+
+def alte_Dateien_vorhanden(path, poll_gen):
+    for oldfile in path.iterdir():
+        if oldfile.is_file() and oldfile.stem.startswith(f"_mdm_old-{poll_gen}_"):
+            return True
+    return False
+
+
+def alte_Dateien_entfernen(path, poll_gen=0, do_recursive=False, remove_temps=False):
+    """poll_gen ist die löschende poll-Generation. Bei Wert null werden alle alten gelöscht! """
+    temp_counter = 0
+    anycounter, nextcounter = 0, 0
+    for oldfile in path.iterdir():
+        if oldfile.is_file() and oldfile.stem.startswith("_mdm_old"):
+            if (not poll_gen) or oldfile.stem.startswith(f"_mdm_old-{poll_gen}_"):
+                print(f"    remove {oldfile.name}")
+                oldfile.unlink(missing_ok=True)
+                anycounter += 1
+            elif oldfile.stem.startswith(f"_mdm_old-{poll_gen + 1}_"):
+                nextcounter += 1
+        elif remove_temps and oldfile.is_file() and oldfile.stem.startswith("_mdmtemp_"):
+            oldfile.unlink(missing_ok=True)
+            temp_counter += 1
+        elif do_recursive and oldfile.is_dir():
+            ac, nc = alte_Dateien_entfernen(oldfile, force_all, do_recursive)
+            anycounter += ac
+            nextcounter += nc
+    if temp_counter:
+        print(f'{temp_counter} temporäre Dateien gelöscht.')
+    return anycounter, nextcounter
+
+
+def warte_entferne_exit(startpath, poll_gen=0):
+    try:
+        sleep(15)
+    except KeyboardInterrupt:
+        print("Abbruch ok, lösche noch schnell...")
+    alte_Dateien_entfernen(startpath, poll_gen)
+    exit(0)
 
 
 DEMO_MDM_DIR_YAML = """
