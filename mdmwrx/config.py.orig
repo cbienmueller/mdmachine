@@ -8,23 +8,17 @@
 # Batteries
 from dataclasses import dataclass, field
 from pathlib import Path
-from shutil import which
-
-
 
 
 # MDMWRX
 from mdmwrx.yamlread import get_yaml_dict_from_yaml
 
 
-BROWSER_ENGINES = ['chromium', 'google-chrome', 'brave-browser']
-
 @dataclass
 class Config_Obj:  
     startpath: Path
     rootpath: Path              # nur gültig, wenn root_exists
     medien_path: Path
-    browser_engine: str
     dir_count: int              # Verzeichnisanzahl zw. root und start (1 bei is_root, 0 wenn root_exists==False)
     flag_dir_is_root: bool      # Quasi die Info, ob obige Pfade identisch sind
     flag_root_exists: bool      # ob die Datei mdm_root.yaml überhaupt existiert
@@ -45,16 +39,10 @@ class Config_Obj:
     flag_gen_slides: bool       # Slides erzeugen?
     lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
 
+
 def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
-    # Schritt 1: Browser-Engine checken
-    browser_engine = ""
-    for engine in BROWSER_ENGINES:
-        if which(engine):
-            browser_engine = engine
-            break 
-        
     rootpath = startpath
-    # Schritt 2: root suchen
+    # Schritt 1: root suchen
     relpath = relpath_2_root(startpath)
     if not relpath:
         print("Found no mdm_root.yaml.")
@@ -62,7 +50,6 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
             startpath,
             rootpath,
             medien_path,
-            browser_engine,
             0,
             False,
             False,
@@ -92,7 +79,6 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
         startpath,
         rootpath,
         medien_path,
-        browser_engine,
         relpath.count("/"),
         flag_dir_is_root,
         flag_root_exists, 
@@ -128,3 +114,4 @@ def relpath_2_root(path):
     if (path / relpath / 'mdm_root.yaml').is_file():
         return relpath
     return ""    
+    

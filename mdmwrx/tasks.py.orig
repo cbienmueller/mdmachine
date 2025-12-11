@@ -153,7 +153,7 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
                 print("\nPause abgebrochen. Kein Problem, lösche noch eventuelle mdm_old-Dateien.")
                 alte_Dateien_entfernen(startpath, True, do_recursive)
                 print("Fertig & beendet (wegen KeyboardInterrupt)")
-                (startpath / poll_flag_filename).unlink()      # jetzt belege ich das Verzeichnis nicht mehr...
+                Path(startpath / poll_flag_filename).unlink()      # jetzt belege ich das Verzeichnis nicht mehr...
                 exit()
 
     print('Mein Polling-Flag wurde gelöscht!\nEnde des Programms.')

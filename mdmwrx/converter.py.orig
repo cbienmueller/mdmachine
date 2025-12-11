@@ -11,7 +11,11 @@ from mdmwrx.tools import debug
     Dabei wird so oder so nur ein Docker-Aufruf gemacht.
 """
 
+BROWSER_ENGINE = 'google-chrome'
+# BROWSER_ENGINE = 'brave-browser'
+
 CONVERT_VERBOSE = True
+
 
 # SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
 SLIDE_FORMATE = {
@@ -73,13 +77,10 @@ def do_convert(cd):  # cd: ConvertData
     erfolg = convert2html(cd)
     if cd.mymeta.suppress_pdf_flag:
         return 
-    if not cd.c_o.browser_engine:
-        print("Kein Browser gefunden, daher keine PDF-Generierung!")
-    else:
-        if erfolg:
-            erfolg = convert2A4pdf(cd)
-        if erfolg and cd.mymeta.gen_slides_flag:
-            erfolg = convert2slides(cd)
+    if erfolg:
+        erfolg = convert2A4pdf(cd)
+    if erfolg and cd.mymeta.gen_slides_flag:
+        erfolg = convert2slides(cd)
 
     if not erfolg:
         if not CONVERT_VERBOSE:
@@ -316,7 +317,7 @@ def convert2A4pdf(cd):
     print(f'Konvertiere {cd.mymeta.title} nun in A4-PDF')
     
     dotodo_go = [
-        cd.c_o.browser_engine,  
+        BROWSER_ENGINE,  
         '--no-sandbox', '--headless=true', '--disable-gpu', '--disable-search-engine-choice-screen',
         '--run-all-compositor-stages-before-draw', '--no-pdf-header-footer',
         '--no-margins', '--virtual-time-budget=400000',
@@ -357,7 +358,7 @@ def convert2slides(cd):
         slides_pdf_filename = f'{cd.tmp_filestem}_SLIDES{s_format_ext}.pdf'
         
         slides_todo = [
-            cd.c_o.browser_engine, 
+            BROWSER_ENGINE, 
             '--no-sandbox', '--headless', '--disable-gpu', '--disable-search-engine-choice-screen',
             '--run-all-compositor-stages-before-draw', '--print-to-pdf-no-header',
             '--no-margins', '--virtual-time-budget=400000',
