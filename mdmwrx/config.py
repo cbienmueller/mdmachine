@@ -17,7 +17,7 @@ from shutil import which
 from mdmwrx.yamlread import get_yaml_dict_from_yaml
 
 
-BROWSER_ENGINES = ['chromium', 'google-chrome', 'brave-browser']
+BROWSER_ENGINES = ['google-chrome', 'chromium', 'brave-browser']
 
 @dataclass
 class Config_Obj:  
