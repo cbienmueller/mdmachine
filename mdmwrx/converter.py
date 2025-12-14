@@ -4,8 +4,14 @@ import subprocess
 
 from pathlib import Path
 
+# Gemischte Gefühle für mypy & typing
+import typing
+if typing.TYPE_CHECKING:
+    from mdmwrx.task_file import Convert_Data
+
 # MDMWRX
 from mdmwrx.tools import debug
+
 
 """ führt die eigentlich md->html->pdf - Konvertierung durch. Ggf. doppelt, wenn auch Slides gewünscht sind.
     Dabei wird so oder so nur ein Docker-Aufruf gemacht.
@@ -46,7 +52,7 @@ DYN_HEADER = """<!-- Dyn_header.txt: Wird je nach Konfig. erstellt, benutzt, gel
 """
 
 
-def dbg(ort, variable, wert, comment=""):
+def dbg(ort: str, variable: str, wert: str, comment: str = "") -> None:
     if CONVERT_VERBOSE:
         print(f'''In {ort}: {
               variable} = {
@@ -54,7 +60,7 @@ def dbg(ort, variable, wert, comment=""):
               "" if not comment else f'({comment})'}''')
   
     
-def filtererrors(fehlerblock):
+def filtererrors(fehlerblock: str) -> str:
     ignore_patterns = [':INFO:', ':WARNING:', 'system_bus_socket', 'Fontconfig error:', 
                        'bytes written', ':ERROR:bus.', ':ERROR:kwallet', 'cannot touch', 
                        'org.freedesktop.DBus', 'org.freedesktop.portal.GlobalShortcuts.Activated']
@@ -69,7 +75,7 @@ def filtererrors(fehlerblock):
     return '\n'.join(ausgabe)
 
 
-def do_convert(cd):  # cd: ConvertData
+def do_convert(cd: 'Convert_Data'): 
     erfolg = convert2html(cd)
     if cd.mymeta.suppress_pdf_flag:
         return 

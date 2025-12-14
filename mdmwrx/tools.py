@@ -7,8 +7,15 @@ from time import sleep
     aus
 """
 
+# Gemischte Gefühle für mypy & typing
+import typing
+from typing import Any
+if typing.TYPE_CHECKING:
+    import mdmwrx.config
+    from pathlib import Path
 
-def debug(c_o, first, *params):
+
+def debug(c_o: 'mdmwrx.config.Config_Obj', first: Any, *params: Any) -> None:
     params_seperator = ""
     if c_o.flag_verbose:
         output = str(first)
@@ -21,14 +28,18 @@ def debug(c_o, first, *params):
         print(output)
 
 
-def alte_Dateien_vorhanden(path, poll_gen):
+def alte_Dateien_vorhanden(path: 'Path', poll_gen: int) -> bool:
     for oldfile in path.iterdir():
         if oldfile.is_file() and oldfile.stem.startswith(f"_mdm_old-{poll_gen}_"):
             return True
     return False
 
 
-def alte_Dateien_entfernen(path, poll_gen=0, do_recursive=False, remove_temps=False):
+def alte_Dateien_entfernen(path: 'Path',
+                           poll_gen: int = 0,
+                           do_recursive: bool = False,
+                           remove_temps: bool = False
+                           ) -> tuple[int, int]:
     """poll_gen ist die löschende poll-Generation. Bei Wert null werden alle alten gelöscht! """
     temp_counter = 0
     anycounter, nextcounter = 0, 0
@@ -44,7 +55,7 @@ def alte_Dateien_entfernen(path, poll_gen=0, do_recursive=False, remove_temps=Fa
             oldfile.unlink(missing_ok=True)
             temp_counter += 1
         elif do_recursive and oldfile.is_dir():
-            ac, nc = alte_Dateien_entfernen(oldfile, force_all, do_recursive)
+            ac, nc = alte_Dateien_entfernen(oldfile, poll_gen, do_recursive)
             anycounter += ac
             nextcounter += nc
     if temp_counter:
@@ -52,7 +63,7 @@ def alte_Dateien_entfernen(path, poll_gen=0, do_recursive=False, remove_temps=Fa
     return anycounter, nextcounter
 
 
-def warte_entferne_exit(startpath, poll_gen=0):
+def warte_entferne_exit(startpath: 'Path', poll_gen: int = 0) -> None:
     try:
         sleep(15)
     except KeyboardInterrupt:
@@ -103,7 +114,7 @@ DEMO_MDM_DIR_YAML = """
 """
 
 
-def write_demo_mdm_dir_yaml(path):
+def write_demo_mdm_dir_yaml(path: 'Path') -> str:
     le_path = path / "mdm_dir.yaml.blank"
     with open(le_path, 'w') as f:
         f.write(DEMO_MDM_DIR_YAML)
@@ -185,7 +196,7 @@ DEMO_MDM_ROOT_YAML = """
 """
 
 
-def write_demo_mdm_root_yaml(path):
+def write_demo_mdm_root_yaml(path: 'Path') -> str:
     le_path = path / "mdm_root.yaml.blank"
     with open(le_path, 'w') as f:
         f.write(DEMO_MDM_ROOT_YAML)

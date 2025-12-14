@@ -7,6 +7,14 @@ die dort über Kommandozeilenparameter ausgewählt wurden.
 import time
 import uuid
 
+# Gemischte Gefühle für mypy & typing
+import typing
+# from typing import Optional
+if typing.TYPE_CHECKING:
+    import mdmwrx.config
+    from pathlib import Path
+    
+
 # MDMWRX
 from mdmwrx.task_sidefiles import make_sidebar_file, make_sitemap_n_timeline
 from mdmwrx.task_file import handle_file
@@ -14,7 +22,7 @@ from mdmwrx.tools import alte_Dateien_entfernen
 # from mdmwrx.tools import debug
 
 
-def handle_update(c_o, path, force_flag, poll_flag):
+def handle_update(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', force_flag: bool, poll_flag: bool) -> None:
     print("\nGewählte Funktion: Update - überprüft gesamten Dokumentenbaum.\n")
     if not c_o.flag_dir_is_root:
         print('Das aktuelle Verzeichnis enthält keine mdm_root.yaml.\n'
@@ -57,8 +65,16 @@ def handle_update(c_o, path, force_flag, poll_flag):
     alte_Dateien_entfernen(path, 0, True, True)
     
 
-def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_force=False, do_recursive=False, 
-               indent="", be_quiet=False):
+def handle_dir(c_o: 'mdmwrx.config.Config_Obj',
+               path: 'Path',
+               do_print: bool = True,
+               dryrun: bool = False,
+               do_sidebar: bool = False,
+               do_force: bool = False,
+               do_recursive: bool = False, 
+               indent: str = "",
+               be_quiet: bool = False
+               ) -> int:
     konvertierte = 0
     subdirs = 0
     if do_recursive:
@@ -108,8 +124,13 @@ def handle_dir(c_o, path, do_print=True, dryrun=False, do_sidebar=False, do_forc
     return konvertierte
 
 
-def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursive=False):
+def handle_polling(c_o: 'mdmwrx.config.Config_Obj',
+                   startpath: 'Path',
+                   do_sidebar: bool = False,
+                   do_force: bool = False,
+                   do_recursive: bool = False) -> None:
     poll_flag_filename = "_mdm_poll_" + uuid.uuid4().hex + ".flag"
+    poll_flag_file = startpath / poll_flag_filename
     print('Funktion: Polling')
     for f in startpath.glob('_mdm_poll_*.flag'):
         print(f"Fremdes polling flag gefunden! {f.name} muss gelöscht werden ")
@@ -119,13 +140,14 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
     # Sauberer Start
     alte_Dateien_entfernen(startpath, 0, do_recursive=do_recursive, remove_temps=True)
     c_o.poll_generation = 2  # virtueller Vorgänger > 0, den vor der Action wird poll_generation noch inkrementiert!
-    with (startpath / poll_flag_filename).open('w') as f:
-        f.write('polling')
+    with poll_flag_file.open('w') as f:         # type: ignore[assignment]
+        f.write('polling')                      # type: ignore[attr-defined]
+
     TIMERSTARTWERT = 20  # Sekunden, bis auch alte Backupdateien gelöscht werden
     timer = TIMERSTARTWERT
     be_quiet = False
     do_print = True
-    while (startpath / poll_flag_filename).is_file():   # Ende, wenn MEIN Flag gelöscht wird!
+    while poll_flag_file.is_file():   # Ende, wenn MEIN Flag gelöscht wird!
         k = handle_dir(c_o, 
                        startpath, 
                        do_print=do_print,
@@ -140,7 +162,7 @@ def handle_polling(c_o, startpath, do_sidebar=False, do_force=False, do_recursiv
             c_o.poll_generation += 1          
             # also sind 3 Generationen noch auf der Festplatte: -1, -2 und -3! -0 wird als nächstes angelegt
             alte_Dateien_entfernen(startpath, c_o.poll_generation - 3, do_recursive)  # jetzt also noch -1 und -2
-            timer = TIMERSTARTWERT / 2
+            timer = int(TIMERSTARTWERT / 2)
             if do_recursive:
                 print('\nNun wird der Verzeichnisbaum alle 3s still überprüft und ggf. konvertiert.\nEnde mit Strg-C\n')
             else:

@@ -51,12 +51,12 @@ HELP = '''
         '''
 
 
-def start_your_engines():
+def start_your_engines() -> None:
     Path('/tmp/mdmachine/config').mkdir(parents=True, exist_ok=True)
     Path('/tmp/mdmachine/cache').mkdir(parents=True, exist_ok=True)
 
     # Pfad, in dem Medien-Dateien liegen, hauptsächlich CSS-Includes
-    medien_path: Path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
+    medien_path = (Path(__file__).parent.resolve() / "mdmwrx" / "medien").absolute()
     print(f'Medienverzeichnis:  {medien_path}')
 
     # Arbeitspfad ("von wo wurde mdmachine aufgerufen, wo liegen die Dateien")
@@ -135,10 +135,11 @@ def start_your_engines():
             # Endlos mit poll_flag, daher Option unten palmäßig nicht mehr erreichbar.
             
         if mdm_args.all_flag:
-            mdmwrx.tasks.handle_dir(config_obj, startpath, 
-                                    do_sidebar=mdm_args.side_flag, do_force=mdm_args.force_flag,
-                                    do_recursive=mdm_args.recursive_flag)
-            warte_entferne_exit(startpath, 0)
+            count = mdmwrx.tasks.handle_dir(config_obj, startpath, 
+                                            do_sidebar=mdm_args.side_flag, do_force=mdm_args.force_flag,
+                                            do_recursive=mdm_args.recursive_flag)
+            if count:
+                warte_entferne_exit(startpath, 0)
             
         if mdm_args.side_flag:
             make_sidebar_file(config_obj, startpath, do_recursive=mdm_args.recursive_flag)
@@ -162,6 +163,6 @@ def start_your_engines():
 # ### START ### #
 # ############# #
 
-print('mdmachine Version 1.0.2 von 2025-12-11')
+print('mdmachine Version 1.0.3 von 2025-12-14')
 start_your_engines()
         

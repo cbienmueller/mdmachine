@@ -11,6 +11,12 @@ from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 
+# Gemischte Gefühle für mypy & typing
+import typing
+from typing import Optional
+if typing.TYPE_CHECKING:
+    import mdmwrx.config
+
 # MDMWRX
 from mdmwrx.pre_proc import do_pre_proc
 from mdmwrx.yamlread import get_yaml_dict_from_md
@@ -33,10 +39,12 @@ class MdYamlMeta:
     suppress_pdf_flag: bool = False
     lang: str = ""
     relpath2r: str = ""
-       
+    inc_style_list: Optional[list[str]] = None
+    slide_format_list: Optional[list[str]] = None
     
+
 @dataclass
-class ConvertData:
+class Convert_Data:
     """ Diese reine Daten-Klasse vereint notwendige Daten, davon zwei weitere Datenklassen, 
         welche für die Konvertierung von Dateien nötig sind.
     """
@@ -46,7 +54,12 @@ class ConvertData:
     mymeta: MdYamlMeta
 
 
-def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
+def handle_file(c_o: 'mdmwrx.config.Config_Obj',
+                sourcefile: Path,
+                do_print: bool = True,
+                dryrun: bool = False,
+                do_force: bool = False
+                ) -> tuple[bool, int]:
     """gibt (bool erfolg, int anzahl) zurück"""
     flag_do_convert = False
     if not (sourcefile.is_file() and 
@@ -118,7 +131,7 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
             else:
                 print(f'!!! include-file {incname} missing!!!')
                 
-    do_convert(ConvertData(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
+    do_convert(Convert_Data(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
     
     endungen = ['_SLIDES.html', '_SLIDES.pdf', '.html', '_A4.pdf']
     for s_format in SLIDE_FORMATE.keys():
@@ -160,7 +173,7 @@ def handle_file(c_o, sourcefile, do_print=True, dryrun=False, do_force=False):
     return True, 1
 
 
-def get_meta_from_mdyaml(c_o, mdfile):
+def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple[MdYamlMeta, list[str]]:
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
           - s.o.
         - sowie includierte md-Dateien als String-Liste

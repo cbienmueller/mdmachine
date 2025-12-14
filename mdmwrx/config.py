@@ -31,7 +31,7 @@ class Config_Obj:
     cssfile_md: str             # URL
     cssfile_sb: str             # URL
     mainfont: str               # URL
-    fixlinks: list[tuple]       # (URL, title, hover)
+    fixlinks: list[dict]        # (URL, title, hover) in dict
     inc_style_list: list[str]   # List of Strings als Namensbestandteile
     inc_css_list: list[str]     # List of Strings als (zu root) relative css-Pfade
     inc_main_css: str           # Eine CSS-Datei, die auch für Sidefiles verwendet wird (-> Farbdefinitionen)
@@ -48,7 +48,7 @@ class Config_Obj:
     lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
 
 
-def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
+def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad ist schon resolved
     # Schritt 1: Browser-Engine checken
     browser_engine = ""
     for engine in BROWSER_ENGINES:
@@ -111,7 +111,7 @@ def get_config_obj(startpath, medien_path):   # Pfad ist schon resolved
     )
     
             
-def relpath_2_root(path):
+def relpath_2_root(path: Path) -> str:
     """ Gibt den relativen Pfad (z.B. "./../..") zum Root-Verzeichnis zurück
         Ohne Root-Verzeichnis: Leerer String
         Bereits im Root-Verzeichnis: "."

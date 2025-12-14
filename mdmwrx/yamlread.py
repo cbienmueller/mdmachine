@@ -6,9 +6,17 @@
         Pandoc ist dabei aber kritischer: Start:--- Ende:...
 """
 
+# Gemischte Gefühle für mypy & typing
+import typing
+from typing import Optional, Any
+if typing.TYPE_CHECKING:
+    # import mdmwrx.config
+    from pathlib import Path
+
 # not Batteries:
 try:
-    import yaml  # Quelle unter debian: python3-yaml, sonst pyyaml per pip
+    import yaml  # type: ignore[import-untyped]
+    # Quelle unter debian: python3-yaml, sonst pyyaml per pip
 except Exception:
     print('''Fehler!\nPyYaml muss installiert sein!
         Installiere entweder python3-yaml unter Debian 
@@ -17,7 +25,7 @@ except Exception:
 
 
 class Y_dict(dict):
-    def get_bool(self, key, default=False, accept_char_as_true=""):
+    def get_bool(self, key: str, default=False, accept_char_as_true="") -> bool:
         """ gibt IMMER True oder False zurück!
         """
         value = self.get(key, default)
@@ -31,11 +39,11 @@ class Y_dict(dict):
                 return True
         return False
 
-    def get_list_lowered(self, key, default=[]):
+    def get_list_lowered(self, key: str, default: list[Any] = []) -> list[str]:
         vlist = self.get_list(key, default)
         return [str(x).lower() for x in vlist]
 
-    def get_list(self, key, default=[]):
+    def get_list(self, key: str, default: list[Any] = []) -> list[Any]:
         """ was immer als value aus dem dict geliefert wurde, wird nun als Liste zurückgegeben
         """
         value = self.get(key, default)
@@ -48,9 +56,23 @@ class Y_dict(dict):
             return default      # Dummywert
         else:
             return [default]
+    
+    def get_int(self, key: str, default: int = 0) -> int:
+        value = self.get(key, default)
+        if isinstance(value, int):
+            return value
+        return default
+        
+    def get_str(self, key: str, default: str = "") -> str:
+        value = self.get(key, default)
+        if isinstance(value, str):
+            return value
+        if not value:
+            return default
+        return str(default)
 
 
-def get_yaml_dict_from_md(mdfile):
+def get_yaml_dict_from_md(mdfile: 'Path') -> Y_dict:
     """ Liest aus der md-Datei den YAML-Bereich und konvertiert ihn zu einem dict.
         Feste Vorgabe: Beginnt als erste Zeile mit drei ---, endet mit drei ... am Zeilenanfang.
         Bei Fehler: Leeres dict.
@@ -78,10 +100,10 @@ def get_yaml_dict_from_md(mdfile):
     except Exception:
         pass                # nicht lesbar = nicht interessant...
 
-    return valid_Y_dict("")
+    return valid_Y_dict({})
     
     
-def get_yaml_dict_from_yaml(yamlfile):
+def get_yaml_dict_from_yaml(yamlfile: 'Path') -> Y_dict:
     """ Liest reines YAML ein und konvertiert zu einem dict.
         Bei Fehler: Leeres dict.
     """
@@ -94,7 +116,7 @@ def get_yaml_dict_from_yaml(yamlfile):
     return valid_Y_dict(yaml_dict)
 
 
-def valid_Y_dict(yaml_dict):
+def valid_Y_dict(yaml_dict: Optional[dict]) -> Y_dict:
     if not isinstance(yaml_dict, dict):
         return Y_dict({"m²_yaml_load_error": True}) 
     return Y_dict(yaml_dict)

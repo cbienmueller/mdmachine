@@ -8,8 +8,16 @@
 # Batteries
 from dataclasses import dataclass
 
+# Gemischte Gefühle für mypy & typing
+import typing
+from typing import Optional
+if typing.TYPE_CHECKING:
+    import mdmwrx.config
+    from pathlib import Path
+    from mdmwrx.yamlread import Y_dict  
+
 # MDMWRX
-from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md
+from mdmwrx.yamlread import get_yaml_dict_from_yaml, get_yaml_dict_from_md, valid_Y_dict
 from mdmwrx.converter import SLIDE_FORMATE, SLIDE_FORMAT_DESC
 from mdmwrx.tools import debug
 from mdmwrx.config import relpath_2_root
@@ -95,7 +103,17 @@ TIMELINE_fine = '''
 """
 
 
-def make_sitemap_n_timeline(c_o, root_path):
+@dataclass
+class RootInfo:  
+    fixlink_section: str = ""
+    fixlink_count: int = 0
+    root_section: str = ""
+    lang: str = ""
+    updir_string: str = ""
+    root_path: Optional['Path'] = None
+
+
+def make_sitemap_n_timeline(c_o: 'mdmwrx.config.Config_Obj', root_path: 'Path') -> None:
     sm_path = root_path / 'sitemap.html'
     tl_path = root_path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
@@ -127,7 +145,7 @@ def make_sitemap_n_timeline(c_o, root_path):
     overwrite_if_changed(c_o, tl_path, output)
 
 
-def get_side_navi(c_o, path):
+def get_side_navi(c_o: 'mdmwrx.config.Config_Obj', path: 'Path') -> tuple[str, str, RootInfo]:
     ri = get_root_info(c_o, path)
     timeline_list_dummy = [("2024-01-01", "dummy")]
     lang = ri.lang
@@ -139,7 +157,10 @@ def get_side_navi(c_o, path):
     return content, lang, ri
         
         
-def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
+def get_folderinfo4sitemap(root_path: Optional['Path'], 
+                           relpath: str, 
+                           timeline_list: list, 
+                           filespath: Optional['Path'] = None) -> str:
     ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
         relpath ist der zu den Links zu addierende path,
             der den Ort relativ zum Verzeichnis von make_sitemap_n_timeline angibt.
@@ -148,8 +169,10 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     '''
     if SB_VERBOSE:
         print("gfi4sm-> root_path: ", root_path, "rel:", relpath, "!")
+    if not root_path and filespath:
+        root_path = filespath
     if not root_path:
-        root_path = filespath  # return ""
+        return ""
     filename, foldertitle, yd = get_folder_filename_title_yaml(root_path)
     if not (filename and foldertitle):      # Kein Verzeichnis mit Inhalten gefunden
         return ""
@@ -185,7 +208,7 @@ def get_folderinfo4sitemap(root_path, relpath, timeline_list, filespath=""):
     return smf_output
     
 
-def make_sidebar_file(c_o, path, do_recursive=False):
+def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursive: bool = False):
     file_path = path / '_mdm_sidebar_.html'
     output = ""
 
@@ -217,7 +240,7 @@ def make_sidebar_file(c_o, path, do_recursive=False):
                 make_sidebar_file(c_o, subdir, do_recursive)
 
 
-def overwrite_if_changed(c_o, file_path, content):
+def overwrite_if_changed(c_o: 'mdmwrx.config.Config_Obj', file_path: 'Path', content: str) -> bool:
     """ Einige Dateien werden regelmäßig neu erstellt.
         Wenn sie sich dabei inhaltlich nicht ändern, so erzeugt das unnötige 
             Schreiblast auf dem Speichermedium und setzt auch das 
@@ -244,7 +267,7 @@ def overwrite_if_changed(c_o, file_path, content):
     return False    
         
 
-def get_title_prio_from_html(htmlfile, ersatztitel=''):
+def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '') -> tuple[str, int]:
     """ Zuerst wird versucht eine gleichnamige md-Datei zu finden
             und den Titel und die Prio aus YAML zu extrahieren.
         Sonst ist Prio 100 und Titel wird weiter gesucht:
@@ -259,8 +282,8 @@ def get_title_prio_from_html(htmlfile, ersatztitel=''):
     
     yamldict = get_yaml_dict_from_md(htmlfile.absolute().parent / (htmlfile.stem + ".md"))
     if yamldict:
-        title = yamldict.get("title")
-        prio = analyze_priostrg(yamldict.get("m²_sbpriority"))
+        title = yamldict.get_str("title")
+        prio = analyze_priostrg(yamldict.get_str("m²_sbpriority"))
         # print(f'yamldict for {htmlfile.name} liefert {prio}')
         
     if title:
@@ -289,7 +312,7 @@ def get_title_prio_from_html(htmlfile, ersatztitel=''):
     return htmlfile.stem, prio
     
     
-def analyze_priostrg(priostrg):
+def analyze_priostrg(priostrg: str) -> int:
     priostrg = str(priostrg).lower()
     if priostrg.isdigit():
         prioint = int(priostrg)
@@ -299,7 +322,7 @@ def analyze_priostrg(priostrg):
     return prio
                     
     
-def get_parent_section(path):
+def get_parent_section(path: 'Path') -> tuple[str, int]:
     parent_filename, parent_title, parent_dict = get_folder_filename_title_yaml(path.parent)
     
     if parent_filename:    
@@ -311,7 +334,7 @@ def get_parent_section(path):
     return "", 0  # leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
         
         
-def get_links_section(path):
+def get_links_section(path: 'Path') -> tuple[str, int]:
     
     d_i_y = path / 'mdm_dir.yaml'
     l_r_output = ''
@@ -326,7 +349,7 @@ def get_links_section(path):
     return l_r_output, l_anzahl
     
     
-def format_yaml_links(links):
+def format_yaml_links(links: Optional[list[dict]]) -> tuple[str, int]:
     linkoutput = ''
     l_anzahl = 0
     if links:
@@ -340,12 +363,16 @@ def format_yaml_links(links):
     return linkoutput, l_anzahl
     
     
-def get_files_section(path, relpath="", timeline_list=None, all_files=True):
+def get_files_section(path: 'Path',
+                      relpath: str = "",
+                      timeline_list: Optional[list[tuple[str, str]]] = None,
+                      all_files: bool = True
+                      ) -> tuple[str, int]:
     """ findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
     """
     index_filename, folder_title, ydict = get_folder_filename_title_yaml(path)
     
-    li_list = [[], [], []]
+    li_list: list[list[tuple[str, str]]] = [[], [], []]
     files_output = ''
     if relpath and not relpath.endswith("/"):
         relpath += "/"
@@ -404,9 +431,9 @@ def get_files_section(path, relpath="", timeline_list=None, all_files=True):
                     abstract = ""
                     if yd:
                         date_dt = yd.get("date")
-                        title = yd.get("title")
-                        abstract = yd.get("abstract")
-                        description = yd.get("description")
+                        title = yd.get_str("title")
+                        abstract = yd.get_str("abstract")
+                        description = yd.get_str("description")
                         if date_dt and title:
                             date = date_dt.strftime("%d.%m.%Y")
                             if not abstract:
@@ -442,17 +469,9 @@ def get_files_section(path, relpath="", timeline_list=None, all_files=True):
     return files_output, fanzahl
 
 
-@dataclass
-class RootInfo:  
-    fixlink_section: str = ""
-    fixlink_count: int = 0
-    root_section: str = ""
-    lang: str = ""
-    updir_string: str = ""
-    root_path: str = ""
-
-
-def get_root_info(c_o, akt_path):
+def get_root_info(c_o: 'mdmwrx.config.Config_Obj', 
+                  akt_path: 'Path'
+                  ) -> RootInfo:
     """ bekommt ein Config_Obj sowie den akt. Path und
         gibt ein RootInfo-Objekt zurück
     """
@@ -461,7 +480,7 @@ def get_root_info(c_o, akt_path):
     filename = ""
     fl_output = ""
     fl_anzahl = 0
-    pathlist = []
+    pathlist: list[tuple[str, str]] = []
     pathlistoutput = ""
     
     debug(c_o, "ROOT-Info: START für ", akt_path)
@@ -520,7 +539,7 @@ def get_root_info(c_o, akt_path):
     return RootInfo(fl_output, fl_anzahl, root_section, c_o.lang, updir_string, (akt_path / updir_string).resolve())
     
    
-def get_folder_filename_title_yaml(folder_path):
+def get_folder_filename_title_yaml(folder_path: 'Path') -> tuple[str, str, 'Y_dict']:
     """ Liefert nach bestem Bemühen 
         1 den Dateinamen der indexdatei eines Verzeichnisses und 
         2 den anzugebenden Title des Verzeichnisses:
@@ -535,13 +554,13 @@ def get_folder_filename_title_yaml(folder_path):
     # print("Lese Folder-Info von ", d_i_y)
     folder_title = ''
     folder_filename = ''
-    d_i_y_dict = {}
+    d_i_y_dict: Y_dict = valid_Y_dict({})
     if d_i_y.is_file():
         # d_i_y einlesen in d_i_y_dict
         d_i_y_dict = get_yaml_dict_from_yaml(d_i_y)
         if d_i_y_dict:
-            folder_filename = d_i_y_dict.get("m²_indexfilename")
-            folder_title = d_i_y_dict.get("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
+            folder_filename = str(d_i_y_dict.get("m²_indexfilename"))
+            folder_title = str(d_i_y_dict.get("m²_overridetitle"))    # eigentlich unlogisch, aber wenn der User es will...
     if not folder_filename or not (folder_path / folder_filename).is_file():
         folder_filename = 'index.html'
     if not (folder_path / folder_filename).is_file():
@@ -552,5 +571,5 @@ def get_folder_filename_title_yaml(folder_path):
             folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, folder_path.name)
         return folder_filename, folder_title, d_i_y_dict 
         
-    return "", folder_path.name, {}  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
+    return "", folder_path.name, valid_Y_dict({})  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
 
