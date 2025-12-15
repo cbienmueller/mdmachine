@@ -64,6 +64,12 @@
     .column img {
         max-width: 48vw;
     }
+    .column30 img {
+        max-width: 29vw;
+    }
+    .column70 img {
+        max-width: 68vw;
+    }
     figcaption, [data-filename]:after {
         font-size: 0.35cm;
         line-height: normal;
