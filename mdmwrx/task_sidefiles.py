@@ -214,9 +214,18 @@ def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursiv
 
     navi_content, lang, ri = get_side_navi(c_o, path)
     relpath2r = relpath_2_root(path)
+    
+    if c_o.inc_main_css:
+        if c_o.inc_main_css.lower().startswith('https://') or \
+           c_o.inc_main_css.lower().startswith('http://'):
+            inc_main_css_url = c_o.inc_main_css
+        else:   
+            inc_main_css_url = f'{cd.mymeta.relpath2r}/{c_o.inc_main_css}'
+    else:
+        inc_main_css_url = ""    
     output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb, 
-                                      f'<link rel="Stylesheet" type="text/css" href="{relpath2r}/{c_o.inc_main_css}">\n'
-                                      if c_o.inc_main_css else "")
+                                      f'<link rel="Stylesheet" type="text/css" href="{inc_main_css_url}">\n'
+                                      if inc_main_css_url else "")
     output += navi_content               # komplette Navigation
     output += '\t<hr>\n'                 # Trennlinie
     
@@ -415,7 +424,7 @@ def get_files_section(path: 'Path',
                                                              relpath + htmlfile.name,
                                                              title.replace(" ", "-"), 
                                                              "", 
-                                                             title_prefix + title, 
+                                                             title_prefix + '&nbsp;' + title, 
                                                              pdffileentry + slidesfileentry)
                                   )) 
             # ein tupel mit (sortierkriterium,inhalt)

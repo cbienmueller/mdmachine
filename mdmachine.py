@@ -159,10 +159,11 @@ def start_your_engines() -> None:
                 warte_entferne_exit(startpath, config_obj.poll_generation)
             
 
-# ############# #
-# ### START ### #
-# ############# #
+if __name__ == '__main__':
+    # ############# #
+    # ### START ### #
+    # ############# #
 
-print('mdmachine Version 1.0.3 von 2025-12-14')
-start_your_engines()
+    print('mdmachine Version 1.0.4 von 2025-12-21')
+    start_your_engines()
         

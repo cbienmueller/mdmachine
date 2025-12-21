@@ -247,7 +247,11 @@ def convert2html(cd):
         for cssitem in cd.c_o.inc_css_list:
             f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cssitem}">\n')
         if cd.c_o.inc_main_css:
-            f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cd.c_o.inc_main_css}">\n')
+            if cd.c_o.inc_main_css.lower().startswith('https://') or \
+               cd.c_o.inc_main_css.lower().startswith('http://'):
+                f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.c_o.inc_main_css}">\n')
+            else:   
+                f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cd.c_o.inc_main_css}">\n')
         
     html_todo_base += [    
         '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen
