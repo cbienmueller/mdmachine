@@ -21,7 +21,8 @@
             ifrm.setAttribute("src", "_mdm_sidebar_.html");
             ifrm.title = "Navigation";
             ifrm.style.width = "100%";
-            ifrm.style.height = "100%";
+            ifrm.style.height = "99%";
+            ifrm.style.height = "calc(100% - 16px)";
             ifrm.style.borderWidth = "0px";
             ifrm.id = "SBIframe";
             newDiv.appendChild(ifrm);

@@ -159,6 +159,12 @@ def handle_polling(c_o: 'mdmwrx.config.Config_Obj',
         do_print = False
         be_quiet = True  # volle Ausgabe max nur beim ersten Mal
         if k:
+            try: 
+                with poll_flag_file.open("a") as f:                             # type: ignore[assignment]
+                    f.write(f'\nKonvertierungsende: {                           # type: ignore [attr-defined]
+                        time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')  
+            except FileNotFoundError:  # Uups, schon gelöscht worden
+                pass
             c_o.poll_generation += 1          
             # also sind 3 Generationen noch auf der Festplatte: -1, -2 und -3! -0 wird als nächstes angelegt
             alte_Dateien_entfernen(startpath, c_o.poll_generation - 3, do_recursive)  # jetzt also noch -1 und -2

@@ -220,7 +220,7 @@ def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursiv
            c_o.inc_main_css.lower().startswith('http://'):
             inc_main_css_url = c_o.inc_main_css
         else:   
-            inc_main_css_url = f'{cd.mymeta.relpath2r}/{c_o.inc_main_css}'
+            inc_main_css_url = f'{relpath2r}/{c_o.inc_main_css}'
     else:
         inc_main_css_url = ""    
     output += SIDEBAR_barebone.format(lang, 'Navigation', c_o.cssfile_main, c_o.cssfile_sb, 
