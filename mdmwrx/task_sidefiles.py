@@ -38,7 +38,6 @@ FILE_barebone = """<!DOCTYPE html>
 
 TIMELINE_barebone = FILE_barebone + """
 <body style="width:50opx">
-  <h2>Neueste Artikel</h2>
   <details open>
     <summary>
         Ein/Ausblenden
