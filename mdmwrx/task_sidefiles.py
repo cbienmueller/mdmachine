@@ -406,7 +406,7 @@ def get_files_section(path: 'Path',
             if htmlfile.name == index_filename:
                 prio = 2
                 liclass = ""
-                title_prefix = "🗁" if all_files else "🗀"
+                title_prefix = "↓" if all_files else "→"   # "🗁" "🗀"
             pdffilename = f'{htmlfile.stem}_A4.pdf'
             if (path / pdffilename).exists() and all_files:
                 pdffileentry = SIDEBAR_pdf.format(relpath + pdffilename)
