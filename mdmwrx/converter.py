@@ -17,7 +17,7 @@ from mdmwrx.tools import debug
     Dabei wird so oder so nur ein Docker-Aufruf gemacht.
 """
 
-CONVERT_VERBOSE = True
+CONVERT_VERBOSE = False
 
 # SLIDE_... und INCLUDE_CSS werden unterschieden, da SLIDE... zu verschiedenen Dateien führt - INC ändert nur den Inhalt.
 SLIDE_FORMATE = {
@@ -147,7 +147,7 @@ def call_my_script(cd):
     """Ruft das im Verzeichnis befindliche _mdmtemp..._todo.sh DIREKT auf
     """
     
-    print("Starte ToDo-Skript...")
+    # print("  ToDo-Skript startet")
     kommando = [
         'bash',
         f'{cd.tmp_filestem}_todo.sh']
@@ -169,8 +169,7 @@ def call_my_script(cd):
     finally:
         os.chdir(prev_cwd)
     
-    print("...beendet")
-    print('ToDo-Skript beendet')
+    # print('  ToDo-Skript beendet')
     if out:
         print("\nstdout:\n" + out.decode('utf-8'))
     if err:
@@ -189,7 +188,6 @@ def get_inc_txt_filename(cd, inc_name, inc_type):
         realpath = cd.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
         if realpath.is_file():
             return (f'{prefix}_{save_name}_{inc_type}.txt')
-    print(f'Fehler: der includierte Style {save_name} wurde nicht als Datei{str(realpath)} gefunden.')
     return ""
 
 
@@ -228,7 +226,8 @@ def convert2html(cd):
             else:
                 # Wird für alle Dateien verwendet
                 style_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
-        
+        elif not gibt_slidestyle_flag:
+            print(f'Fehler: der includierte Style {save_name} wurde nicht gefunden.')
     # Anfang der Liste der Parameter um HTML zu erzeugen
     html_todo_base = [                                      
         'pandoc', 
@@ -303,12 +302,12 @@ def convert2html(cd):
                     'export XDG_CACHE_HOME=/tmp/m²_cache\n')
         else:
             f.write('# Shellskript, das direkt ausgeführt wird\n')
-        f.write('echo Starting "Convert to html"\n')
+        f.write('echo "    Starting: convert to html"\n')
         f.write(" ".join(html_todo))
         f.write("\n")
         f.write(" ".join(slides_todo))
         f.write("\n")
-        f.write('echo Finished "Convert to HTML"\n')
+        f.write('echo "    Finished: convert to HTML"\n')
             
     if USE_DOCKER:
         call_my_docker(cd) 
@@ -323,7 +322,7 @@ def convert2html(cd):
   
 
 def convert2A4pdf(cd):
-    print(f'Konvertiere {cd.mymeta.title} nun in A4-PDF')
+    print(f'''Konvertiere '{cd.mymeta.title}' nun in A4-PDF''')
     
     dotodo_go = [
         cd.c_o.browser_engine,  
@@ -338,10 +337,10 @@ def convert2A4pdf(cd):
         f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                 'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                 'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-        f.write('echo Starting Convert to A4.pdf\n')
+        f.write('echo "    Starting: convert to A4.pdf"\n')
         f.write(" ".join(dotodo_go))
         f.write("\n")
-        f.write('echo Finished Convert to A4.pdf\n')
+        f.write('echo "    Finished: convert to A4.pdf"\n')
         f.write("\n")
 
     # call_my_docker(cd)
@@ -355,8 +354,9 @@ def convert2A4pdf(cd):
 
 
 def convert2slides(cd):
-        
     for s_format in cd.mymeta.slide_format_list:
+        print(f'''Konvertiere '{cd.mymeta.title}' nun in {s_format}-PDF''')
+
         slide_format_filename = SLIDE_FORMATE.get(s_format)
         if slide_format_filename:
             s_format_ext = "_" + s_format  # für Dateinamen
@@ -377,10 +377,10 @@ def convert2slides(cd):
             f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
                     'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                     'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-            f.write(f'echo Starting "Convert to SLIDE{s_format_ext}.pdf"\n')
+            f.write(f'echo "    Starting: convert to SLIDE{s_format_ext}.pdf"\n')
             f.write(" ".join(slides_todo))
             f.write("\n")
-            f.write(f'echo Finished "Convert to SLIDE{s_format_ext}.pdf"\n')
+            f.write(f'echo "    Finished: convert to SLIDE{s_format_ext}.pdf"\n')
             
         call_my_script(cd)
         
