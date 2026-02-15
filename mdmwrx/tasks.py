@@ -85,7 +85,7 @@ def handle_dir(c_o: 'mdmwrx.config.Config_Obj',
                 sourcefile.stem.startswith("_mdtemp") or sourcefile.stem.startswith("_mdmtemp") or
                 (sourcefile.stem.startswith("_") and sourcefile.stem.endswith("_"))):
             if sourcefile.is_file():        
-                _, n = handle_file(c_o, sourcefile, do_print, dryrun, do_force)
+                _, n = handle_file(c_o, sourcefile, do_print, dryrun, do_force, ignore_sidebar=True)
                 konvertierte += n
             elif do_recursive and sourcefile.is_dir():
                 konvertierte += handle_dir(c_o, sourcefile, 

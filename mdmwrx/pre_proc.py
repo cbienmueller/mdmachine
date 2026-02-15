@@ -45,9 +45,9 @@ void println()              { System.out.println(""); }
 
 LAST_JAVA_EXECUTES_FILENAME = '/tmp/mdm_java_executes.pickle'
 
-last_java_executes = {}  # nimmt hash und output von Code auf
-last_java_executes_filled = False
-last_java_executes_loaded = False    # auch erfolglose loads zählen
+last_java_executes: dict[str, str] = {}  # nimmt hash und output von Code auf
+last_java_executes_filled: bool = False
+last_java_executes_loaded: bool = False    # auch erfolglose loads zählen
 
 MERMAID_LOADER = \
     '''\n\n\n

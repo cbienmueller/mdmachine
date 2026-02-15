@@ -164,6 +164,6 @@ if __name__ == '__main__':
     # ### START ### #
     # ############# #
 
-    print('mdmachine Version 1.0.5 von 2026-01-06')
+    print('mdmachine Version 1.0.6 von 2026-02-15')
     start_your_engines()
         

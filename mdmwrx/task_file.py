@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
+# from hashlib import file_digest
 
 # Gemischte Gefühle für mypy & typing
 import typing
@@ -23,6 +24,7 @@ from mdmwrx.yamlread import get_yaml_dict_from_md
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.config import Config_Obj, relpath_2_root
 from mdmwrx.tools import alte_Dateien_vorhanden   # debug
+from mdmwrx.task_sidefiles import make_sidebar_file
 
 
 @dataclass
@@ -58,7 +60,8 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                 sourcefile: Path,
                 do_print: bool = True,
                 dryrun: bool = False,
-                do_force: bool = False
+                do_force: bool = False,
+                ignore_sidebar: bool = False
                 ) -> tuple[bool, int]:
     """gibt (bool erfolg, int anzahl) zurück"""
     flag_do_convert = False
@@ -170,6 +173,9 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
             tf.unlink()
         except Exception:
             pass
+    if not ignore_sidebar:
+        if (path / "_mdm_sidebar_.html").exists():
+            make_sidebar_file(c_o, path)
     return True, 1
 
 
@@ -202,7 +208,7 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple
         mymeta.keep_slides_html_flag = True
 
     mymeta.lang = yaml_dict.get("lang", c_o.lang)
-    mymeta.title = yaml_dict.get("title")
+    mymeta.title = yaml_dict.get_str("title")
     # print("YAML-title: ", mymeta.title)
     mymeta.suppress_pdf_flag = yaml_dict.get("m²_suppress_pdf", c_o.flag_sup_pdf)   
     
