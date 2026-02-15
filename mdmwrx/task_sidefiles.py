@@ -239,7 +239,7 @@ def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursiv
 
     output += SIDEBAR_fine
 
-    overwrite_if_changed(c_o, file_path, output)
+    overwrite_if_changed(c_o, file_path, output) # landet nur auf Disk, wenn Änderung im Inhalt - damit preiswert!
         
     if do_recursive:
         for subdir in path.iterdir():
