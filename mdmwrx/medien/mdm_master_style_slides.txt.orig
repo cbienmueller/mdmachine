@@ -4,9 +4,8 @@
     /* ********************************************** *
      * Stile, die Präsentationsslides in PDF erzeugen *
      * ********************************************** *
-        2026-02-22    .note und source-code-Kästen verbessert (Größe, Farben, Ränder)
-        2026-02-17  - .note verbessert mit inline wenn ohne Rand
-                       - body-Breite korrigiert
+		2026-02-17  - .note verbessert mit inline wenn ohne Rand
+		            - body-Breite korrigiert
         2025-05-03  - Seitenverhältnis systematisiert: 
                         Feste Höhe 14,5 cm. 
                         Standardbreite: iPad air 5th, andere via m²_slide_width = fhd | gen8 | beamer
@@ -22,7 +21,8 @@
                     - Bilder in Slides kleiner, damit Caption (auch verkleinert) dazu passt,
                     - column automatisch wide_on_slides
                     - Links in Slides nicht ausschreiben
-                    - TOC kleiner    */
+                    - TOC kleiner
+    */
     :root { --calc_body_width: 100vw; }  
     @media print {
 		:root { --calc_body_width: 100vw; }  
@@ -106,17 +106,13 @@
         line-height: normal;
         width: 24vw;
     }
-    /* Fallback, wenn kein extra-Margin gewählt oder gewünscht */
+    /* Fallback, wenn kein extra-Margin gewählt oder gewünscht  */
     .m²_note:not(.m²_margin_on_slides .m²_note) {
-        font-size: 70%;
+        font-size: 80%;
         display: block;
         position: initial;
-        max-width: 5cm; 
-        min-width: 3cm;
-        margin-left: 2px;
-        border-left: 4px dotted var(--deco-color);
-        border-top:  4px dotted var(--deco-color);
-    }
+        width: 20vw; }
+    
     
     #TOC {
         font-size:70%;
@@ -139,8 +135,7 @@
     dd {    /* entsprechend die Beschreibung eingerückt für "daneben" */
         margin-left: 8.5em;
     }
-    code, code.sourceCode,
-    pre, pre.sourceCode  {
+    code {
         background-color: #ffb;
         color: #009;
     }
