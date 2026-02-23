@@ -141,14 +141,16 @@
     }
     code, code.sourceCode,
     pre, pre.sourceCode  {
-        background-color: #ffb;
+        background-color: #fff8b0;
         color: #009;
     }
     .m²_source_code {        
-        background-color: #ffb;
+        background-color: #fff8b0;
     }
+    .m²_output,
+    .m²_output pre,
     .m²_output pre code {
-        background-color: #ececec;
+        background-color: #DFD;
     }
     pre.mermaid {
         max-width: 19.5cm;
