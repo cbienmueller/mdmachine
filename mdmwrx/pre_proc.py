@@ -83,7 +83,7 @@ def preprocess(filein, fileout, remove_yaml=False):
     return_lines = []
     output_lines = []
     yaml_sep_count = 0
-    java_easyprint = False
+    java_easyprint = True
     
     flag_include_mermaid_cdn = False   # soll für ein oder mehrere mermaid-Diagramme die js-Bibliothek geladen werden?
     
@@ -120,8 +120,8 @@ def preprocess(filein, fileout, remove_yaml=False):
             code_block = [] 
             if '.execute' in line:              # Klasse execute muss dem Codeblock zugeordnet werden, 
                 do_execute = True               # damit er hier auch ausgeführt wird
-                if '.easyprint' in line:
-                    java_easyprint = True
+                if '.noeasyprint' in line:
+                    java_easyprint = False
                 
             if code_kennzeichen_ist("python"):  # die Klasse python muss dazu dem Codeblock zugeordnet werden
                 code_typ = "Python"
