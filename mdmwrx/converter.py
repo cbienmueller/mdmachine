@@ -258,7 +258,7 @@ def convert2html(cd):
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
         '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
         '-H', f'{medienurl}/mdm_master_header.txt',         # füge script in den header ein
-        '--syntax-highlighting', 'pygments',                # wähle einen besser lesbaren Syntax-Highlighting-Stil
+        '--syntax-highlighting', f'{medienurl}/solarizeddark.theme',                # wähle einen besser lesbaren Syntax-Highlighting-Stil
         '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'] + \
         style_files_list                                    # include-Styles für alle Ausgabetypen
     
