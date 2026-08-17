@@ -114,12 +114,13 @@ class RootInfo:
 
 def make_sitemap_n_timeline(c_o: 'mdmwrx.config.Config_Obj', root_path: 'Path') -> None:
     sm_path = root_path / 'sitemap.html'
+    st_path = root_path / 'sitemap.txt'
     tl_path = root_path / '_mdm_timeline_.html'
     timeline_list = [("2024-01-01", "dummy")]
     lang = c_o.lang
     
     # ## Dateistart sitemap
-    content = get_folderinfo4sitemap(root_path, "", timeline_list)  
+    content, urls_as_text = get_folderinfo4sitemap(root_path, "", c_o.sitemap_prefix, timeline_list)  
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-mdm_dir.yaml
     
@@ -129,6 +130,9 @@ def make_sitemap_n_timeline(c_o: 'mdmwrx.config.Config_Obj', root_path: 'Path') 
     output += content
     output += SIDEBAR_fine
     overwrite_if_changed(c_o, sm_path, output)
+
+    if c_o.sitemap_prefix:          # nur mit prefix gibt es absolute URLS, ohne ist fehlerhaft...
+        overwrite_if_changed(c_o, st_path, urls_as_text)
         
     # ## Timeline
     # timeline_list nimmt Datum und Beschreibungstext auf
@@ -148,7 +152,7 @@ def get_side_navi(c_o: 'mdmwrx.config.Config_Obj', path: 'Path') -> tuple[str, s
     ri = get_root_info(c_o, path)
     timeline_list_dummy = [("2024-01-01", "dummy")]
     lang = ri.lang
-    content = get_folderinfo4sitemap(ri.root_path, ri.updir_string, timeline_list_dummy, path)
+    content, _ = get_folderinfo4sitemap(ri.root_path, ri.updir_string, c_o.sitemap_prefix, timeline_list_dummy, path)
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-mdm_dir.yaml
     # timeline_list nimmt Datum und Beschreibungstext auf
@@ -158,8 +162,9 @@ def get_side_navi(c_o: 'mdmwrx.config.Config_Obj', path: 'Path') -> tuple[str, s
         
 def get_folderinfo4sitemap(root_path: Optional['Path'], 
                            relpath: str, 
+                           sitemap_prefix: str,
                            timeline_list: list, 
-                           filespath: Optional['Path'] = None) -> str:
+                           filespath: Optional['Path'] = None) -> tuple[str, str]:
     ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
         relpath ist der zu den Links zu addierende path,
             der den Ort relativ zum Verzeichnis von make_sitemap_n_timeline angibt.
@@ -171,14 +176,16 @@ def get_folderinfo4sitemap(root_path: Optional['Path'],
     if not root_path and filespath:
         root_path = filespath
     if not root_path:
-        return ""
+        return "", ""
     filename, foldertitle, yd = get_folder_filename_title_yaml(root_path)
     if not (filename and foldertitle):      # Kein Verzeichnis mit Inhalten gefunden
-        return ""
+        return "", ""
 
     if relpath and not relpath.endswith("/"):
         relpath += "/"
+
     smf_output = ""
+    urls_as_text = ""
     
     if filespath and SB_VERBOSE: 
         print("filespath, root_path:", filespath, root_path)
@@ -187,8 +194,9 @@ def get_folderinfo4sitemap(root_path: Optional['Path'],
         all_files = True
     else:
         all_files = False
-    l_section, _ = get_files_section(root_path, relpath, timeline_list, all_files)
+    l_section, _, urls_t = get_files_section(root_path, relpath, timeline_list, all_files, sitemap_prefix)
     smf_output += l_section
+    urls_as_text += urls_t
 
     smf_sub_output = ""
     # for subdir in root_path.iterdir():
@@ -196,15 +204,16 @@ def get_folderinfo4sitemap(root_path: Optional['Path'],
         if subdir.is_dir():
             if SB_VERBOSE:
                 print("sitemap: recurse into -> " + subdir.name)
-            content = get_folderinfo4sitemap(subdir, relpath + subdir.name, timeline_list, filespath)
+            content, urls_t = get_folderinfo4sitemap(subdir, relpath + subdir.name, sitemap_prefix, timeline_list, filespath)
             smf_sub_output += content
+            urls_as_text += urls_t
     if smf_sub_output:
         smf_output += SIDEBAR_sectionstart.format("", "")
         smf_output += smf_sub_output
         smf_output += SIDEBAR_sectionende
     if SB_VERBOSE > 1:
         print(f"smf_output:{smf_output}")
-    return smf_output
+    return smf_output, urls_as_text
     
 
 def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursive: bool = False):
@@ -374,12 +383,17 @@ def format_yaml_links(links: Optional[list[dict]]) -> tuple[str, int]:
 def get_files_section(path: 'Path',
                       relpath: str = "",
                       timeline_list: Optional[list[tuple[str, str]]] = None,
-                      all_files: bool = True
-                      ) -> tuple[str, int]:
-    """ findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
+                      all_files: bool = True,
+                      sitemap_prefix: str = ""
+                      ) -> tuple[str, int, str]:
+    """ * findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
+        * gibt deren Anmzahl zurück
+        * übergibt urls zu html-Dateien als text
     """
     index_filename, folder_title, ydict = get_folder_filename_title_yaml(path)
     
+    urls_as_text = ""
+
     li_list: list[list[tuple[str, str]]] = [[], [], []]
     files_output = ''
     if relpath and not relpath.endswith("/"):
@@ -400,6 +414,9 @@ def get_files_section(path: 'Path',
                
             # yey, wir haben eine html-Datei gefunden. Sammle dies als Link, mit Title, Priorität und ggf. PDF-File
             title, prio = get_title_prio_from_html(htmlfile)  # prio aus {0 , 1, 2} für Low, Normal, High
+            # und in Url-Liste für sitemap.txt vermerken
+            urls_as_text += sitemap_prefix + relpath + htmlfile.name + "\n"
+
             liclass = "nonindex"
             title_prefix = ""
             if htmlfile.name == index_filename:
@@ -474,7 +491,7 @@ def get_files_section(path: 'Path',
             files_output += li[1]
         files_output += SIDEBAR_sectionende
 
-    return files_output, fanzahl
+    return files_output, fanzahl, urls_as_text
 
 
 def get_root_info(c_o: 'mdmwrx.config.Config_Obj', 

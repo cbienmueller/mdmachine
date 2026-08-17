@@ -39,6 +39,7 @@ class Config_Obj:
 
     # nun fakultative, vorbelegte Attribute
     flag_gen_sitemap: bool = False     # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
+    sitemap_prefix: str = ""           # notwendiges Präfic für absolute Pfade in sitemap.txt
     flag_gen_sidebar: bool = False     # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
     #                                  #   mit html-Dateien geführt werden?
     flag_verbose: bool = False         # für Ausgabe von Debug-Informationen
@@ -104,6 +105,7 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
         yd.get("m²_include_main_css", ""),
         yd.get("m²_lang", "de-DE"),
         yd.get("m²_generate_sitemap", False),
+        yd.get("m²_sitemap_prefix", ""),
         yd.get("m²_generate_sidebar", False),
         yd.get("m²_verbose", False),
         yd.get("m²_suppress_pdf", False),
