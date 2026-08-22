@@ -43,7 +43,10 @@ class MdYamlMeta:
     relpath2r: str = ""
     inc_style_list: Optional[list[str]] = None
     slide_format_list: Optional[list[str]] = None
-    
+    includes_list: Optional[list[str]] = None
+    force_pdf_stem: Optional[str] = ""
+    force_ignore_pdfs: Optional[bool] = False
+
 
 @dataclass
 class Convert_Data:
@@ -109,7 +112,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     #############################
     
     # Metadaten aus dem YAML-Bereich holen:
-    mymeta, includes = get_meta_from_mdyaml(c_o, sourcefile)
+    mymeta = get_meta_from_mdyaml(c_o, sourcefile)
     
     tmp_filestem = "_mdmtemp_" + uuid.uuid4().hex
     tmp_preproc_file = path / f'{tmp_filestem}_preproc.md'
@@ -120,8 +123,8 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     print("Präprozessor...")
     do_pre_proc(sourcefile, tmp_preproc_file)
     
-    if includes:
-        for incname in includes:
+    if mymeta.includes_list:
+        for incname in mymeta.includes_list:
             print(f'include-after: {incname}')
             incfile = path / incname
             if incfile.exists():
@@ -136,10 +139,13 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                 
     do_convert(Convert_Data(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
     
-    endungen = ['_SLIDES.html', '_SLIDES.pdf', '.html', '_A4.pdf']
-    for s_format in SLIDE_FORMATE.keys():
-        endungen.append(f'_SLIDES_{s_format}.html')
-        endungen.append(f'_SLIDES_{s_format}.pdf')
+    if mymeta.force_ignore_pdfs:
+        endungen = ['.html']    
+    else:
+        endungen = ['_SLIDES.html', '_SLIDES.pdf', '.html', '_A4.pdf']
+        for s_format in SLIDE_FORMATE.keys():
+            endungen.append(f'_SLIDES_{s_format}.html')
+            endungen.append(f'_SLIDES_{s_format}.pdf')
         
     if not c_o.poll_generation:  # single shot Anwendung
         c_o.poll_generation = 100
@@ -147,25 +153,33 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
             c_o.poll_generation += 1
 
     for endung in endungen:
+        use_file_stem = sourcefile.stem
+        if mymeta.force_pdf_stem and endung != '.html':
+            use_file_stem = mymeta.force_pdf_stem
+
         # uralte immer entfernen (sollten anderweitig bereits entfernt worden sein)
-        (path / f'_mdm_old_{sourcefile.stem}{endung}').unlink(missing_ok=True)
-        (path / f'_mdm_aged_{sourcefile.stem}{endung}').unlink(missing_ok=True)
+        (path / f'_mdm_old_{use_file_stem}{endung}').unlink(missing_ok=True)
+        (path / f'_mdm_aged_{use_file_stem}{endung}').unlink(missing_ok=True)
 
         # alte immer umbenennen, auch wenn sie nicht ersetzt werden (dann müssen sie trotzdem weg)
         try:
-            (path / f'{sourcefile.stem}{endung}').rename(path / f'_mdm_old-{c_o.poll_generation}_{sourcefile.stem}{endung}')
+            (path / f'{use_file_stem}{endung}').rename(path / f'_mdm_old-{c_o.poll_generation}_{use_file_stem}{endung}')
         except FileNotFoundError:
             pass
 
     # neue - müssen eigentlich existieren (und im gleichen Filesystem liegen)!
     for endung in endungen:
+        use_file_stem = sourcefile.stem
+        if mymeta.force_pdf_stem and endung != '.html':
+            use_file_stem = mymeta.force_pdf_stem
+        
         try:
-            (path / f'{tmp_filestem}{endung}').rename(path / f'{sourcefile.stem}{endung}')
+            (path / f'{tmp_filestem}{endung}').rename(path / f'{use_file_stem}{endung}')
         except FileNotFoundError:
             pass
 
         if endung.startswith('_SLIDES') and endung.endswith('.html') and not mymeta.keep_slides_html_flag:
-            (path / f'{sourcefile.stem}{endung}').unlink(missing_ok=True)
+            (path / f'{use_file_stem}{endung}').unlink(missing_ok=True)
 
     # Sofort aufräumen, was nicht mehr gebraucht wird
     for tf in path.glob(f'{tmp_filestem}*'):
@@ -179,7 +193,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     return True, 1
 
 
-def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple[MdYamlMeta, list[str]]:
+def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYamlMeta:
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
           - s.o.
         - sowie includierte md-Dateien als String-Liste
@@ -196,7 +210,6 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple
     mymeta.inc_style_list = []
 
     yaml_dict = get_yaml_dict_from_md(mdfile)  # existiert immer, aber ggf. leer, 
-    includes = []
 
     mymeta.relpath2r = relpath_2_root(mdfile.parent)
     # print(f'Weg zu root: {relpath2r}')
@@ -207,12 +220,18 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple
     if mymeta.gen_slides_flag and str(yaml_dict.get("m²_generate_slides")).lower().startswith("k"):
         mymeta.keep_slides_html_flag = True
 
+    mymeta.force_ignore_pdfs = yaml_dict.get_bool("m²_force_ignore_pdfs")   # Verhindert, dass ungenutzte PDFs gelöscht werden. 
+    # Eine andere md nutzt dann den folgenen Eintrag:
+    mymeta.force_pdf_stem = yaml_dict.get_str("m²_force_pdf_stem")  
+    # Statt des eigenen Dateirumpfs wird dieser Wert für PDFs verwendet.
+    # So kann eine md passende PDFs für eine andere generieren. Damit erscheinen beide im Inhaltsverzeichnis zusammen. Tricky
+
     mymeta.lang = yaml_dict.get("lang", c_o.lang)
     mymeta.title = yaml_dict.get_str("title")
     # print("YAML-title: ", mymeta.title)
     mymeta.suppress_pdf_flag = yaml_dict.get("m²_suppress_pdf", c_o.flag_sup_pdf)   
     
-    includes = yaml_dict.get_list("m²_include_after")
+    mymeta.includes_list = yaml_dict.get_list("m²_include_after")
     
     # Nun eine Liste einzufügender Style-Schnipsel-Dateien
     mymeta.inc_style_list = yaml_dict.get_list_lowered("m²_include_style")
@@ -224,4 +243,4 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> tuple
         mymeta.title = mdfile.stem
         mymeta.force_title = True
 
-    return mymeta, includes
+    return mymeta

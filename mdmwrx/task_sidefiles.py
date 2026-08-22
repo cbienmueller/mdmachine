@@ -407,6 +407,7 @@ def get_files_section(path: 'Path',
            htmlfile.stem != "sidebar" and \
            htmlfile.stem != "sitemap" and \
            not htmlfile.stem.startswith("_mdm") and \
+           not htmlfile.stem.startswith("_nodir") and \
            not htmlfile.stem.endswith("_SLIDES") and \
            not htmlfile.stem.endswith("_slides") and \
            '_SLIDES_' not in htmlfile.stem and \

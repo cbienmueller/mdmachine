@@ -37,6 +37,7 @@
   </script>
 
   <style>
+      div.m²_compressed, span.m²_compressed { font-stretch: 90%; }
       div.m²_smaller,    span.m²_smaller    { font-size: 80%; line-height: 110%;   font-stretch: 90%; }
       div.m²_larger,     span.m²_larger     { font-size:120%; line-height: 150%; }
       div.m²_very_large, span.m²_very_large { font-size:140%; line-height: 220%; }

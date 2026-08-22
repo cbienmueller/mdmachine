@@ -84,6 +84,7 @@ def preprocess(filein, fileout, remove_yaml=False):
     output_lines = []
     yaml_sep_count = 0
     java_easyprint = True
+    yaml_title = ""
     
     flag_include_mermaid_cdn = False   # soll für ein oder mehrere mermaid-Diagramme die js-Bibliothek geladen werden?
     
@@ -95,16 +96,27 @@ def preprocess(filein, fileout, remove_yaml=False):
         if (f'.{sprache}' in line.lower()) or (f'```{sprache}' in line.lower()):
             return True
         return False
-        
+
     for line in filein:
         
         # Schritt 1: ggf. YAML-Block am Anfange entfernen (für Verkettung von markdown-Dateien)
+        #            Dabei wird ggf. der title gemerkt und statt des yaml-Blocks als H2 ausgegeben.
         if remove_yaml:
             if line.startswith('---') or line.startswith('...'):
                 yaml_sep_count += 1
+            elif (not yaml_title) and line.startswith('title') and ":" in line:
+                yaml_title = line.split(":")[1].strip()
+                if len(yaml_title) > 2 and yaml_title[0] == yaml_title[-1]:
+                    if yaml_title.startswith('"') or yaml_title.startswith('"'):
+                        yaml_title = yaml_title[1:-2]
+                
             if yaml_sep_count == 2:
                 remove_yaml = False   # job erfüllt
-            if yaml_sep_count > 0:
+                if len(yaml_title) > 0:
+                    line = f"\n## {yaml_title}\n"  # Zeilenumbrüche gegen Überraschungen
+                else:
+                    line = ""
+            elif yaml_sep_count > 0:
                 line = ""
                 
         # Schritt 2a:
