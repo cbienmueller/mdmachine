@@ -99,7 +99,7 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
         yd.get("m²_cssfile_md", 'https://www.bienmueller.de/css/mdm_md.css'),
         yd.get("m²_cssfile_sb", 'https://www.bienmueller.de/css/mdm_sb.css'),
         yd.get("m²_mainfont", 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'),
-        yd.get("m²_fixlinks"),
+        yd.get("m²_fixlinks", ''),
         yd.get_list_lowered("m²_include_style"),
         yd.get_list("m²_include_css"),
         yd.get("m²_include_main_css", ""),

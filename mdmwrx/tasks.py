@@ -77,10 +77,14 @@ def handle_dir(c_o: 'mdmwrx.config.Config_Obj',
                ) -> int:
     konvertierte = 0
     subdirs = 0
+    starttime = time.time()
     if do_recursive:
         if not be_quiet:
             print(f'''*** Dir "{indent}{path.name}" bearbeiten...''')
-    for sourcefile in path.iterdir():
+
+    filelist = list(((f.stat().st_mtime, f) for f in path.iterdir()))
+    filelist.sort(reverse=True)
+    for mtime, sourcefile in filelist:
         if not (
                 sourcefile.stem.startswith("_mdtemp") or sourcefile.stem.startswith("_mdmtemp") or
                 (sourcefile.stem.startswith("_") and sourcefile.stem.endswith("_"))):
@@ -121,6 +125,8 @@ def handle_dir(c_o: 'mdmwrx.config.Config_Obj',
         elif not konvertierte and do_recursive:
             print(f'''  * Dir "{indent}{path.name}" bearbeitet: Nichts zu tun gewesen''')
         
+    if not be_quiet and indent == "":  # Zum Abschätzen des Aufwands
+        print(f"Time for analysing modify times was {int((time.time() - starttime) * 1000) / 1000.0}s")
     return konvertierte
 
 

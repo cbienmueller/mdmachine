@@ -93,10 +93,22 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                 time.sleep(1)
             flag_do_convert = True
 
-        elif do_print:
-            print(f'''>trg: {htmlfile.name: <38} mtime: {
-                datetime.fromtimestamp(htmlfile.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')} (keine Konv. nötig)''')
-        
+        else:
+            if do_print:
+                print(f'''>trg: {htmlfile.name: <38} mtime: {
+                    datetime.fromtimestamp(htmlfile.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')} (keine Konv. nötig)''')
+            # Nun inspizieren wir die Liste der Include-Dateien...
+            source_mdyamlmeta = get_meta_from_mdyaml(c_o, sourcefile)
+            if source_mdyamlmeta.includes_list is not None:
+                if do_print:
+                    print("Includedateien checken:")
+                for incname in source_mdyamlmeta.includes_list:
+                    if htmlfile.stat().st_mtime < (path / incname).stat().st_mtime + 2:
+                        print(f'>trg: {htmlfile.name: <38} älter als Include datei {incname}.')
+                        print(f'''inc>: {incname: <38} mtime: {
+                            datetime.fromtimestamp((path / incname).stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}''')
+                        flag_do_convert = True
+
     else:
         print(f'>trg: {htmlfile.name: <38} zur Quelldatei {sourcefile.name} existiert nicht.')
         flag_do_convert = True
@@ -196,7 +208,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
 def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYamlMeta:
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
           - s.o.
-        - sowie includierte md-Dateien als String-Liste
+        - (auch dabei: includierte md-Dateien als String-Liste)
         
         Der Titel wird aus dem YAML-Bereich der MD-Datei extrahiert.
         Wenn nicht vorhanden, so wird der Dateiname ohne Extension 
