@@ -92,7 +92,7 @@ def get_yaml_dict_from_md(mdfile: 'Path') -> Y_dict:
                             yaml_dict = yaml.safe_load(yaml_block)
                         except Exception as e:
                             yaml_dict = {}
-                            print(f'Yaml-Load-Error: Exception {e}')
+                            print(f'Yaml-Load-Error: Exception {e}\nprocessing file: {mdfile.name}\n{yaml_block}')
                         return valid_Y_dict(yaml_dict)
                         
                 elif reading_yaml: 

@@ -63,7 +63,8 @@ def dbg(ort: str, variable: str, wert: str, comment: str = "") -> None:
 def filtererrors(fehlerblock: str) -> str:
     ignore_patterns = [':INFO:', ':WARNING:', 'system_bus_socket', 'Fontconfig error:', 
                        'bytes written', ':ERROR:bus.', ':ERROR:kwallet', 'cannot touch', 
-                       'org.freedesktop.DBus', 'org.freedesktop.portal.GlobalShortcuts.Activated']
+                       'org.freedesktop.DBus', 'org.freedesktop.portal.GlobalShortcuts.Activated',
+                       'PHONE_REGISTRATION_ERROR', 'DEPRECATED_ENDPOINT']
     ausgabe = []
     for zeile in fehlerblock.split('\n'):
         auslassen = False

@@ -24,7 +24,7 @@ from mdmwrx.yamlread import get_yaml_dict_from_md
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.config import Config_Obj, relpath_2_root
 from mdmwrx.tools import alte_Dateien_vorhanden   # debug
-from mdmwrx.task_sidefiles import make_sidebar_file
+from mdmwrx.task_sidefiles import make_sidebar_file, overwrite_if_changed
 
 
 @dataclass
@@ -46,6 +46,11 @@ class MdYamlMeta:
     includes_list: Optional[list[str]] = None
     force_pdf_stem: Optional[str] = ""
     force_ignore_pdfs: Optional[bool] = False
+    generate_chapter_file: Optional[bool] = False
+    is_generated: Optional[bool] = False
+    keywords: Optional[str] = ""
+    description: Optional[str] = ""
+    abstract: Optional[str] = ""
 
 
 @dataclass
@@ -100,14 +105,19 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
             # Nun inspizieren wir die Liste der Include-Dateien...
             source_mdyamlmeta = get_meta_from_mdyaml(c_o, sourcefile)
             if source_mdyamlmeta.includes_list is not None:
-                if do_print:
-                    print("Includedateien checken:")
+                flag_include_test_info_unprinted = True
                 for incname in source_mdyamlmeta.includes_list:
-                    if htmlfile.stat().st_mtime < (path / incname).stat().st_mtime + 2:
-                        print(f'>trg: {htmlfile.name: <38} älter als Include datei {incname}.')
-                        print(f'''inc>: {incname: <38} mtime: {
-                            datetime.fromtimestamp((path / incname).stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}''')
-                        flag_do_convert = True
+                    incfile = path / incname
+                    if incfile.exists():
+                        if flag_include_test_info_unprinted and do_print:
+                            print("Includedateien checken...")
+                            flag_include_test_info_unprinted = False
+                
+                        if htmlfile.stat().st_mtime < incfile.stat().st_mtime + 2:
+                            print(f'>trg: {htmlfile.name: <38} älter als Include datei {incname}.')
+                            print(f'''inc>: {incname: <38} mtime: {
+                                datetime.fromtimestamp(incfile.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}''')
+                            flag_do_convert = True
 
     else:
         print(f'>trg: {htmlfile.name: <38} zur Quelldatei {sourcefile.name} existiert nicht.')
@@ -129,6 +139,32 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     tmp_filestem = "_mdmtemp_" + uuid.uuid4().hex
     tmp_preproc_file = path / f'{tmp_filestem}_preproc.md'
     tmp_concat_file = path / f'{tmp_filestem}_concat.md'
+    chapterfilecontent = []
+
+    if mymeta.generate_chapter_file and mymeta.force_pdf_stem:
+        print("Oh, generiere Chapter_File")
+        chapter_file = path / (mymeta.force_pdf_stem + ".md")
+        if chapter_file.exists():
+            print("Chapter_File existiert schon")
+            chaptermeta = get_meta_from_mdyaml(c_o, chapter_file)
+            if chaptermeta.is_generated:
+                print("Alles ok, ist generiert")
+            else:
+                print(f'Dein Fehler: Zu generierendes Chapter_File {mymeta.force_pdf_stem + ".md"}'
+                      ' existiert und ist nicht als generiert gekennzeichnet!')
+                mymeta.generate_chapter_file = False
+    if mymeta.generate_chapter_file:
+        chapterfilecontent = ['---', 
+                              'm²_this_file_is_generated_and_will_be_overwritten: true',
+                              'm²_ignore_pdfs: true',
+                              'm²_suppress_pdf: true']
+        mkneen(chapterfilecontent, 'title', mymeta.title)        
+        if mkneen(chapterfilecontent, 'abstract', mymeta.abstract):
+            mkneen(chapterfilecontent, 'abstract-title', '""')        
+        mkneen(chapterfilecontent, 'keywords', mymeta.keywords)        
+        mkneen(chapterfilecontent, 'description', mymeta.description)        
+        chapterfilecontent.append('...')        
+        chapterfilecontent.append('<style>\n  p { margin-left: 2em; }\n  </style>\n')
     # print("vermerke ", sourcefile.absolute(), time.time())
     c_o.lastconverted[sourcefile.absolute()] = time.time()
     
@@ -146,11 +182,18 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                         prepro.write("\n \n \n")
                         shutil.copyfileobj(concat, prepro)
                 tmp_concat_file.unlink(missing_ok=True)
+                if mymeta.generate_chapter_file:
+                    incmeta = get_meta_from_mdyaml(c_o, incfile)   # aus dem cache - billig...
+                    chapterfilecontent.append(f'#### [{incmeta.title} ]({incfile.stem + ".html"})\n')
+                    chapterfilecontent.append(f'{incmeta.abstract}\n\n')
             else:
                 print(f'!!! include-file {incname} missing!!!')
                 
+    if mymeta.generate_chapter_file:
+        overwrite_if_changed(c_o, chapter_file, "\n".join(chapterfilecontent))
+
     do_convert(Convert_Data(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
-    
+
     if mymeta.force_ignore_pdfs:
         endungen = ['.html']    
     else:
@@ -238,6 +281,13 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
     # Statt des eigenen Dateirumpfs wird dieser Wert für PDFs verwendet.
     # So kann eine md passende PDFs für eine andere generieren. Damit erscheinen beide im Inhaltsverzeichnis zusammen. Tricky
 
+    # Soll nun eine Kapiteldatei erzeugt werden? pdf_stem wird dazu verwendet!
+    mymeta.generate_chapter_file = yaml_dict.get_bool("m²_generate_chapter_file")
+    if mymeta.generate_chapter_file and not mymeta.force_pdf_stem:
+        print("Error: no generate_chapter without force_pdf_stem")
+        mymeta.generate_chapter_file = False
+    mymeta.is_generated = yaml_dict.get_bool("m²_this_file_is_generated_and_will_be_overwritten")
+    
     mymeta.lang = yaml_dict.get("lang", c_o.lang)
     mymeta.title = yaml_dict.get_str("title")
     # print("YAML-title: ", mymeta.title)
@@ -250,9 +300,23 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
     
     # Nun eine Liste der zu erzeugenden Slide-Formate mit mindestens einem Wert drin.
     mymeta.slide_format_list = yaml_dict.get_list_lowered("m²_slide_format", ["a5"])
-        
+
+    mymeta.abstract = yaml_dict.get_str("abstract")        
+    mymeta.keywords = yaml_dict.get_str("keywords")        
+    mymeta.description = yaml_dict.get_str("description")        
+
     if not mymeta.title:
         mymeta.title = mdfile.stem
         mymeta.force_title = True
 
     return mymeta
+
+
+def mkneen(lst: list[str], key: str, value: str | None) -> bool:
+    """ make no empty entry"""
+    if value:
+        lst.append(f'{key}: {value}')
+        return True
+    return False
+
+       

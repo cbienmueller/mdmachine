@@ -108,12 +108,12 @@ def preprocess(filein, fileout, remove_yaml=False):
                 yaml_title = line.split(":")[1].strip()
                 if len(yaml_title) > 2 and yaml_title[0] == yaml_title[-1]:
                     if yaml_title.startswith('"') or yaml_title.startswith('"'):
-                        yaml_title = yaml_title[1:-2]
+                        yaml_title = yaml_title[1:-1]
                 
             if yaml_sep_count == 2:
                 remove_yaml = False   # job erfüllt
                 if len(yaml_title) > 0:
-                    line = f"\n## {yaml_title}\n"  # Zeilenumbrüche gegen Überraschungen
+                    line = f"\n# {yaml_title}\n"  # Zeilenumbrüche gegen Überraschungen
                 else:
                     line = ""
             elif yaml_sep_count > 0:
