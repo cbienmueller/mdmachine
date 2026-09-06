@@ -299,7 +299,9 @@ def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '') -> tuple[s
     
     yamldict = get_yaml_dict_from_md(htmlfile.absolute().parent / (htmlfile.stem + ".md"))
     if yamldict:
-        title = yamldict.get_str("title")
+        title = yamldict.get_str("m²_nav_title", "")
+        if not title:
+            title = yamldict.get_str("title")
         prio = analyze_priostrg(yamldict.get_str("m²_sbpriority"))
         # print(f'yamldict for {htmlfile.name} liefert {prio}')
         
@@ -387,7 +389,7 @@ def get_files_section(path: 'Path',
                       sitemap_prefix: str = ""
                       ) -> tuple[str, int, str]:
     """ * findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
-        * gibt deren Anmzahl zurück
+        * gibt deren Anzahl zurück
         * übergibt urls zu html-Dateien als text
     """
     index_filename, folder_title, ydict = get_folder_filename_title_yaml(path)
