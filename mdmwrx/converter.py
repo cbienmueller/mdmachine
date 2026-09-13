@@ -24,12 +24,14 @@ SLIDE_FORMATE = {
     "gen8": 'css_gen8_slides.txt',
     "beamer": 'css_beamer_slides.txt',
     "fhd": 'css_fhd_slides.txt',
+    "fhd2": 'css_fhd2_slides.txt',
     'a5': ''}
 
 SLIDE_FORMAT_DESC = {
     "gen8": 'iPad Gen. 8',
     "beamer": 'Beamer 1280x800',
     "fhd": 'Full-HD',
+    "fhd2": 'Full-HD+X',
     'a5': 'Din-A5 quer, iPad Air 5'}
 
 INCLUDE_STYLE = {
