@@ -100,7 +100,7 @@ def preprocess(filein, fileout, remove_yaml=False):
     for line in filein:
         
         # Schritt 1: ggf. YAML-Block am Anfange entfernen (für Verkettung von markdown-Dateien)
-        #            Dabei wird ggf. der title gemerkt und statt des yaml-Blocks als H2 ausgegeben.
+        #            Dabei wird ggf. der title gemerkt und statt des yaml-Blocks als H1 ausgegeben.
         if remove_yaml:
             if line.startswith('---') or line.startswith('...'):
                 yaml_sep_count += 1

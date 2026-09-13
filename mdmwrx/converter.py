@@ -66,7 +66,7 @@ def filtererrors(fehlerblock: str) -> str:
                        'org.freedesktop.DBus', 'org.freedesktop.portal.GlobalShortcuts.Activated',
                        'PHONE_REGISTRATION_ERROR', 'DEPRECATED_ENDPOINT']
     ausgabe = []
-    for zeile in fehlerblock.split('\n'):
+    for zeile in fehlerblock.splitlines():
         auslassen = False
         for pattern in ignore_patterns:
             if pattern in zeile:
