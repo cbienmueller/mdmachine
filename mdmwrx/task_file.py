@@ -64,6 +64,34 @@ class Convert_Data:
     mymeta: MdYamlMeta
 
 
+CHAPTER_NAVI = """
+:::{.m²_dont_print .m²_smaller style="text-align:center;"}
+
+------
+[{}}]({}})
+&nbsp;&nbsp;&#8678;&nbsp;&nbsp;
+Dieses Kapitel [{}}]({}})
+&nbsp;&nbsp;&#8680;&nbsp;&nbsp;
+[{}}]({}})
+
+Übersicht&nbsp;&#8679;&nbsp;[{}}]({}})
+:::
+"""
+CHAPTER_NAVI_DEMO = """
+:::{.m²_dont_print .m²_smaller style="text-align:center;"}
+
+------
+[vorheriger&nbsp;Abschnitt](1_2_Astronomische_Groessenordungen.html)
+&nbsp;&nbsp;&#8678;&nbsp;&nbsp;
+Dieses Kapitel [Orientierung](1_Orientierung.html)
+&nbsp;&nbsp;&#8680;&nbsp;&nbsp;
+[nächster&nbsp;Abschnitt](1_4_Bewegungen_der_Planeten.html)
+
+Übersicht&nbsp;&#8679;&nbsp;[Astrophysik](../index.html)
+:::
+"""
+
+
 def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                 sourcefile: Path,
                 do_print: bool = True,

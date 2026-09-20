@@ -61,15 +61,17 @@ class Y_dict(dict):
         value = self.get(key, default)
         if isinstance(value, int):
             return value
-        return default
+        if isinstance(default, int):
+            return default
+        return 0
         
     def get_str(self, key: str, default: str = "") -> str:
         value = self.get(key, default)
         if isinstance(value, str):
             return value
-        if not value:
+        if isinstance(default, str):
             return default
-        return str(default)
+        return ""
 
 
 def get_yaml_dict_from_md(mdfile: 'Path') -> Y_dict:

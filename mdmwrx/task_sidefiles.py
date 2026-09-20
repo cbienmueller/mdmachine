@@ -65,7 +65,7 @@ SIDEBAR_slides = ' &nbsp; <a href="{}" title="PDF-SLIDES Format {}" target="_bla
 SIDEBAR_sectionende = '\n\t</ul>\n'
 SIDEBAR_sectionendemini = '\n\t</ul>\n'
 
-TIMELINE_li = '\t\t<li>{} <a href="{}" id="{}" title="{}" target="_parent">{}</a> <small> in {}</small></li>\n'
+TIMELINE_li = '\t\t<li>{} <a href="{}" id="{}" title="{}" target="_parent">{}</a> <small> in "{}"</small></li>\n'
 
 SIDEBAR_fine = '''
   </details>
@@ -300,14 +300,15 @@ def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '') -> tuple[s
     yamldict = get_yaml_dict_from_md(htmlfile.absolute().parent / (htmlfile.stem + ".md"))
     if yamldict:
         title = yamldict.get_str("m²_nav_title", "")
-        if not title:
+        if not len(title):
             title = yamldict.get_str("title")
         prio = analyze_priostrg(yamldict.get_str("m²_sbpriority"))
-        # print(f'yamldict for {htmlfile.name} liefert {prio}')
         
-    if title:
+    # print(f'yamldict for {htmlfile.name} mit Titel {title} liefert {prio}')
+        
+    if len(title) > 0:
         return title, prio
-        
+     
     prio = 1
 
     try:
@@ -587,16 +588,19 @@ def get_folder_filename_title_yaml(folder_path: 'Path') -> tuple[str, str, 'Y_di
         # d_i_y einlesen in d_i_y_dict
         d_i_y_dict = get_yaml_dict_from_yaml(d_i_y)
         if d_i_y_dict:
-            folder_filename = str(d_i_y_dict.get("m²_indexfilename"))
-            folder_title = str(d_i_y_dict.get("m²_overridetitle"))    # eigentlich unlogisch, aber wenn der User es will...
+            folder_filename = d_i_y_dict.get_str("m²_indexfilename")
+            folder_title = d_i_y_dict.get_str("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
     if not folder_filename or not (folder_path / folder_filename).is_file():
         folder_filename = 'index.html'
     if not (folder_path / folder_filename).is_file():
         folder_filename = 'index.htm'
     
     if (folder_path / folder_filename).is_file():      # muss ja irgenwann mal
+        # print(f'Folderdatei {folder_filename} im Pfad {folder_path.name} mit Titel {folder_title}')
+        # if len(folder_title) < 1 or folder_title == "None":  
         if not folder_title:  # jetzt holen wir's lieber aus der Datei; notfalls Verzeichnisname
             folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, folder_path.name)
+        # print(f'Folderdatei {folder_filename} im Pfad {folder_path.name} mit Titel {folder_title}')
         return folder_filename, folder_title, d_i_y_dict 
         
     return "", folder_path.name, valid_Y_dict({})  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.

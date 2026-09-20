@@ -236,7 +236,7 @@ def convert2html(cd):
         'pandoc', 
         '-s']                                               # pandoc soll stand-alone erzeugen (mit header, body usw.)
         
-    # Titel aus dem Dateinamen bilden wenn kein Titel im Source-md enthalten ist
+    # Titel wurde aus dem Dateinamen errechnet wenn kein Titel im Source-md enthalten ist. Dann hier einsetzen!
     if cd.mymeta.force_title:
         html_todo_base += [
             '--metadata', f'pagetitle="{cd.mymeta.title}"']  
