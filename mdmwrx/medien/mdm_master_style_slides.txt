@@ -35,8 +35,9 @@
         margin: 1px;
         margin-left: 2px;
     }
-    body {                          /* Zoom festlegen */
-        font-size: 0.7cm;
+    html { font-size:0.7cm;}        /* Zoom festlegen */
+    body {                          
+        font-size: 100%;            /* da in html bereits gesetzt */
         line-height: 120%;
         width: var(--calc_body_width);
         max-width: var(--calc_body_width);
