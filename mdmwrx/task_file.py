@@ -24,7 +24,7 @@ from mdmwrx.yamlread import get_yaml_dict_from_md
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.config import Config_Obj, relpath_2_root
 from mdmwrx.tools import alte_Dateien_vorhanden   # debug
-from mdmwrx.task_sidefiles import make_sidebar_file, overwrite_if_changed
+from mdmwrx.task_sidefiles import make_sidebar_file, overwrite_if_changed, get_title_prio_from_html
 
 
 @dataclass
@@ -48,6 +48,7 @@ class MdYamlMeta:
     force_ignore_pdfs: Optional[bool] = False
     generate_chapter_file: Optional[bool] = False
     is_generated: Optional[bool] = False
+    chapter_navi_file: Optional[str] = ""
     keywords: Optional[str] = ""
     description: Optional[str] = ""
     abstract: Optional[str] = ""
@@ -65,30 +66,16 @@ class Convert_Data:
 
 
 CHAPTER_NAVI = """
-:::{.m²_dont_print .m²_smaller style="text-align:center;"}
+
+:::::::::{{.m²_dont_print .m²_smaller style="text-align:center;"}}
 
 ------
-[{}}]({}})
-&nbsp;&nbsp;&#8678;&nbsp;&nbsp;
-Dieses Kapitel [{}}]({}})
-&nbsp;&nbsp;&#8680;&nbsp;&nbsp;
-[{}}]({}})
+{}
+&nbsp;&#8679;&nbsp;{}
+{}
 
-Übersicht&nbsp;&#8679;&nbsp;[{}}]({}})
-:::
-"""
-CHAPTER_NAVI_DEMO = """
-:::{.m²_dont_print .m²_smaller style="text-align:center;"}
+:::::::::
 
-------
-[vorheriger&nbsp;Abschnitt](1_2_Astronomische_Groessenordungen.html)
-&nbsp;&nbsp;&#8678;&nbsp;&nbsp;
-Dieses Kapitel [Orientierung](1_Orientierung.html)
-&nbsp;&nbsp;&#8680;&nbsp;&nbsp;
-[nächster&nbsp;Abschnitt](1_4_Bewegungen_der_Planeten.html)
-
-Übersicht&nbsp;&#8679;&nbsp;[Astrophysik](../index.html)
-:::
 """
 
 
@@ -178,7 +165,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
             if chaptermeta.is_generated:
                 print("Alles ok, ist generiert")
             else:
-                print(f'Dein Fehler: Zu generierendes Chapter_File {mymeta.force_pdf_stem + ".md"}'
+                print(f'User-Fehler: Zu generierendes Chapter_File {mymeta.force_pdf_stem + ".md"}'
                       ' existiert und ist nicht als generiert gekennzeichnet!')
                 mymeta.generate_chapter_file = False
     if mymeta.generate_chapter_file:
@@ -196,9 +183,14 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     # print("vermerke ", sourcefile.absolute(), time.time())
     c_o.lastconverted[sourcefile.absolute()] = time.time()
     
+    # Präprozessor erzeugt erst einmal wieder ein Markdown-File
     print("Präprozessor...")
     do_pre_proc(sourcefile, tmp_preproc_file)
     
+    # Hier werden nun weitere Dateien angehängt. 
+    # Enthalten ist ein kurzer Ausflug um ggf. direkt eine weitere
+    #  md-Datei für einen Kapitelüberblick ("chapterfile") zu erzeugen.
+    #  Dies ist dann neu und wird i.d.R. automatisch konvertiert
     if mymeta.includes_list:
         for incname in mymeta.includes_list:
             print(f'include-after: {incname}')
@@ -216,9 +208,42 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
                     chapterfilecontent.append(f'{incmeta.abstract}\n\n')
             else:
                 print(f'!!! include-file {incname} missing!!!')
-                
+
     if mymeta.generate_chapter_file:
         overwrite_if_changed(c_o, chapter_file, "\n".join(chapterfilecontent))
+
+    # Wenn die aktuelle Datei jedoch ein Abschnitt eines Kapitels ist, so sollte eine Navigation am Ende erzeugt werden            
+    if mymeta.chapter_navi_file and (path / mymeta.chapter_navi_file).is_file():
+        chaptermeta = get_meta_from_mdyaml(c_o, path / mymeta.chapter_navi_file)
+        if len(chaptermeta.includes_list) > 1:
+            try:
+                myindex = chaptermeta.includes_list.index(sourcefile.name)
+            except ValueError:
+                print(f"User-Error: diese Datei '{sourcefile.name}'kommt in der include-Liste"
+                      f" der angegebenen Datei {mymeta.chapter_navi_file} nicht vor")
+            else:
+                print(f"Myindex für chapternavi ist {myindex}")
+                a_vor = ""
+                a_nach = ""
+                a_up = ""
+                if myindex > 0:
+                    nav_vor = chaptermeta.includes_list[myindex - 1].rsplit('.', 1)[0] + ".html"
+                    title_vor, _ = get_title_prio_from_html(path / nav_vor, flag_full_title=True)
+                    a_vor = f'zurück&nbsp;zu&nbsp;[{title_vor}]({nav_vor})&nbsp;&nbsp;&#8678;&nbsp;&nbsp;'
+                if myindex < len(chaptermeta.includes_list) - 1:
+                    nav_nach = chaptermeta.includes_list[myindex + 1].rsplit('.', 1)[0] + ".html"
+                    title_nach, _ = get_title_prio_from_html(path / nav_nach, flag_full_title=True)
+                    a_nach = f'&nbsp;&nbsp;&#8680;&nbsp;&nbsp;weiter&nbsp;zu&nbsp;[{title_nach}]({nav_nach})'
+                if chaptermeta.generate_chapter_file and chaptermeta.force_pdf_stem:
+                    nav_up = chaptermeta.force_pdf_stem + ".html"
+                    title_up, _ = get_title_prio_from_html(path / nav_up, flag_full_title=True)
+                else:
+                    nav_up = mymeta.chapter_navi_file.rsplit('.', 1)[0] + ".html"
+                    title_up, _ = get_title_prio_from_html(path / nav_up, flag_full_title=True)
+                a_up = f'Übersicht:[{title_up}]({nav_up})'
+                navi_code = CHAPTER_NAVI.format(a_vor, a_up, a_nach)
+                with open(tmp_preproc_file, 'a') as prepro:
+                    prepro.write(navi_code)
 
     do_convert(Convert_Data(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
 
@@ -323,6 +348,10 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
     
     mymeta.includes_list = yaml_dict.get_list("m²_include_after")
     
+    # Soll eine Navigation zu benachbarten Dateien eingebaut werden? Dann muss die chapte_navi-Datei gesetzt sein
+    #  Die Navigation folgt dann den dortigen include-Dateien
+    mymeta.chapter_navi_file = yaml_dict.get_str("m²_chapter_navi")
+
     # Nun eine Liste einzufügender Style-Schnipsel-Dateien
     mymeta.inc_style_list = yaml_dict.get_list_lowered("m²_include_style")
     

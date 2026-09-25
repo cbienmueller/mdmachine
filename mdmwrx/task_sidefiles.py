@@ -284,7 +284,7 @@ def overwrite_if_changed(c_o: 'mdmwrx.config.Config_Obj', file_path: 'Path', con
     return False    
         
 
-def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '') -> tuple[str, int]:
+def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '', flag_full_title: bool = False) -> tuple[str, int]:
     """ Zuerst wird versucht eine gleichnamige md-Datei zu finden
             und den Titel und die Prio aus YAML zu extrahieren.
         Sonst ist Prio 100 und Titel wird weiter gesucht:
@@ -300,7 +300,7 @@ def get_title_prio_from_html(htmlfile: 'Path', ersatztitel: str = '') -> tuple[s
     yamldict = get_yaml_dict_from_md(htmlfile.absolute().parent / (htmlfile.stem + ".md"))
     if yamldict:
         title = yamldict.get_str("m²_nav_title", "")
-        if not len(title):
+        if not len(title) or flag_full_title:
             title = yamldict.get_str("title")
         prio = analyze_priostrg(yamldict.get_str("m²_sbpriority"))
         
