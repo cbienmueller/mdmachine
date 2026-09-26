@@ -102,7 +102,7 @@ def do_convert(co_da: 'Convert_Data'):
         exit()
         
     
-def call_my_script(co_da):
+def call_my_script(co_da: 'Convert_Data'):
     """Ruft das im Verzeichnis befindliche _mdmtemp..._todo.sh DIREKT auf
     """
     
@@ -111,7 +111,7 @@ def call_my_script(co_da):
         'bash',
         f'{co_da.tmp_filestem}_todo.sh']
         
-    out, err = "", ""
+    out, err = b"", b""
     prev_cwd = Path.cwd()
     os.chdir(co_da.aktpath)
     try:
@@ -139,7 +139,7 @@ def call_my_script(co_da):
         print("\nstderr:\n" + errfiltered)
     
 
-def get_inc_txt_filename(co_da, inc_name, inc_type):
+def get_inc_txt_filename(co_da: 'Convert_Data', inc_name: str, inc_type: str) -> str:
     """ Schaut ob eine geeignete Datei im Medienverzeichnis von mdmachine zu finden ist.
     """
     save_name = "".join(x for x in inc_name if (x.isalnum() or x in "_-"))
@@ -150,7 +150,7 @@ def get_inc_txt_filename(co_da, inc_name, inc_type):
     return ""
 
 
-def convert2html(co_da):
+def convert2html(co_da: 'Convert_Data') -> bool:
     """Konvertiere eine von pre_proc generierte Markdowndatei in ggf. mehrere HTML-Dateien.
         - mymeta.gen_slides entscheidet, ob überhaupt weitere HTML-Dateien für SLIDES erzeugt werden
         - mymeta.slide_width_list enthält eine Liste der zu erzeugenden SLIDE-Formate (auch bei einem eizelnen Wert in YAML)
@@ -163,7 +163,11 @@ def convert2html(co_da):
     style_files_list = []
     style_slides_files_list = []
     style_no_slides_files_list = []
-    style_list = ['master'] + co_da.c_o.inc_style_list + co_da.mymeta.inc_style_list
+    style_list = ['master']
+    if  co_da.c_o.inc_style_list:
+        style_list += co_da.c_o.inc_style_list 
+    if co_da.mymeta.inc_style_list:
+        style_list += co_da.mymeta.inc_style_list
     for inc_style in style_list:
         gibt_slidestyle_flag = False
         # braucht und gibt es einen user_<bla>_style_slides.txt?
@@ -185,7 +189,7 @@ def convert2html(co_da):
                 # Wird für alle Dateien verwendet
                 style_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
         elif not gibt_slidestyle_flag:
-            print(f'Fehler: der includierte Style {save_name} wurde nicht gefunden.')
+            print(f'Fehler: der includierte Style {inc_style} wurde als Datei {inc_style_filename} nicht gefunden.')
     # Anfang der Liste der Parameter um HTML zu erzeugen
     html_todo_base = [                                      
         'pandoc', 
@@ -229,7 +233,7 @@ def convert2html(co_da):
     # '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein    
     
     slides_todo = []                                    # Liste der Parameter um HTML-Slides zu erzeugen
-    if co_da.mymeta.gen_slides_flag:
+    if co_da.mymeta.gen_slides_flag and co_da.mymeta.slide_format_list:
         for s_format in co_da.mymeta.slide_format_list:
             slides_todo += html_todo_base.copy()              
             slide_format_filename = SLIDE_FORMATE.get(s_format)
@@ -272,7 +276,7 @@ def convert2html(co_da):
     return True
   
 
-def convert2A4pdf(co_da):
+def convert2A4pdf(co_da: 'Convert_Data') -> bool:
     print(f'''Konvertiere '{co_da.mymeta.title}' nun in A4-PDF''')
     
     dotodo_go = [
@@ -303,39 +307,40 @@ def convert2A4pdf(co_da):
     return True
 
 
-def convert2slides(co_da):
-    for s_format in co_da.mymeta.slide_format_list:
-        print(f'''Konvertiere '{co_da.mymeta.title}' nun in {s_format}-PDF''')
+def convert2slides(co_da: 'Convert_Data') -> bool:
+    if co_da.mymeta.slide_format_list:
+        for s_format in co_da.mymeta.slide_format_list:
+            print(f'''Konvertiere '{co_da.mymeta.title}' nun in {s_format}-PDF''')
 
-        slide_format_filename = SLIDE_FORMATE.get(s_format)
-        if slide_format_filename:
-            s_format_ext = "_" + s_format  # für Dateinamen
-        else:
-            s_format_ext = "_a5"
+            slide_format_filename = SLIDE_FORMATE.get(s_format)
+            if slide_format_filename:
+                s_format_ext = "_" + s_format  # für Dateinamen
+            else:
+                s_format_ext = "_a5"
+                
+            slides_html_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.html'
+            slides_pdf_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.pdf'
             
-        slides_html_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.html'
-        slides_pdf_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.pdf'
-        
-        slides_todo = [
-            co_da.c_o.browser_engine, 
-            '--no-sandbox', '--headless', '--disable-gpu', '--disable-search-engine-choice-screen',
-            '--run-all-compositor-stages-before-draw', '--print-to-pdf-no-header',
-            '--no-margins', '--virtual-time-budget=400000',
-            f'--print-to-pdf={slides_pdf_filename}', slides_html_filename]
-        
-        with open((co_da.aktpath / f'{co_da.tmp_filestem}_todo.sh'), 'w') as f:
-            f.write('# Shellskript\n'
-                    'export XDG_CONFIG_HOME=/tmp/m²_config\n'
-                    'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-            f.write(f'echo "    Starting: convert to SLIDE{s_format_ext}.pdf"\n')
-            f.write(" ".join(slides_todo))
-            f.write("\n")
-            f.write(f'echo "    Finished: convert to SLIDE{s_format_ext}.pdf"\n')
+            slides_todo = [
+                co_da.c_o.browser_engine, 
+                '--no-sandbox', '--headless', '--disable-gpu', '--disable-search-engine-choice-screen',
+                '--run-all-compositor-stages-before-draw', '--print-to-pdf-no-header',
+                '--no-margins', '--virtual-time-budget=400000',
+                f'--print-to-pdf={slides_pdf_filename}', slides_html_filename]
             
-        call_my_script(co_da)
-        
-        if not (co_da.aktpath / slides_pdf_filename).exists():
-            print(f'ERROR & Abbruch! Zieldatei {slides_pdf_filename} nicht gefunden')
-            return False
+            with open((co_da.aktpath / f'{co_da.tmp_filestem}_todo.sh'), 'w') as f:
+                f.write('# Shellskript\n'
+                        'export XDG_CONFIG_HOME=/tmp/m²_config\n'
+                        'export XDG_CACHE_HOME=/tmp/m²_cache\n')
+                f.write(f'echo "    Starting: convert to SLIDE{s_format_ext}.pdf"\n')
+                f.write(" ".join(slides_todo))
+                f.write("\n")
+                f.write(f'echo "    Finished: convert to SLIDE{s_format_ext}.pdf"\n')
+                
+            call_my_script(co_da)
+            
+            if not (co_da.aktpath / slides_pdf_filename).exists():
+                print(f'ERROR & Abbruch! Zieldatei {slides_pdf_filename} nicht gefunden')
+                return False
 
     return True
