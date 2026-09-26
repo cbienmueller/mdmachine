@@ -286,40 +286,70 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
 def get_inline_navi(co_da: "Convert_Data") -> str:
     # Wenn eine Navigation am Ende erwünscht ist, wird sie hier erzeugt und als String zurückgegeben.
     the_navi_file = co_da.mymeta.chapter_navi_file
-    if not the_navi_file:
+    if the_navi_file:
+        print("inline-navi based on " + the_navi_file)
+    else:
         _, _, diryamldict = get_folder_filename_title_yaml(co_da.aktpath)
         the_navi_file = diryamldict.get_str("m²_chapter_navi")
-        print("diryamldict mit " + the_navi_file)
-    if the_navi_file and (co_da.aktpath / the_navi_file).is_file():
-        chaptermeta = get_meta_from_mdyaml(co_da.c_o, co_da.aktpath / the_navi_file)
-        if chaptermeta.includes_list and len(chaptermeta.includes_list) > 1:
+        if the_navi_file:
+            print("inline-navi based on " + the_navi_file + "(wg. mdm_dir.yaml)")
+    if not the_navi_file:
+        the_navi_file = co_da.c_o.chapter_navi_file
+        if the_navi_file:
+            print("inline-navi based on " + the_navi_file + "(wg. mdm_root.yaml)")
+    if the_navi_file:
+        file_list = []
+        a_vor = ""
+        a_nach = ""
+        a_up = ""
+        # Entweder eine komplette alphabetische Dateiliste ohne führende Unterstriche...
+        if the_navi_file == "*ABC*":
+            for mdfile in co_da.aktpath.iterdir():
+                if mdfile.is_file() and \
+                   mdfile.suffix.lower() == ".md" and \
+                   not mdfile.stem.startswith("_mdm") and \
+                   not mdfile.stem.startswith("_nodir"):
+                    file_list.append(mdfile.name)
+            file_list.sort()
+            a_up = 'FIXME'  # f'Übersicht:[{title_up}]({nav_up})'
+
+        # oder die include-Liste einer Kapiteldatei
+        elif (co_da.aktpath / the_navi_file).is_file():
+            chaptermeta = get_meta_from_mdyaml(co_da.c_o, co_da.aktpath / the_navi_file)
+            if chaptermeta.includes_list:
+                file_list = chaptermeta.includes_list
+            if chaptermeta.generate_chapter_file and chaptermeta.force_pdf_stem:
+                nav_up = chaptermeta.force_pdf_stem + ".html"
+                title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
+            else:
+                nav_up = the_navi_file.rsplit('.', 1)[0] + ".html"
+                title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
+            a_up = f'Übersicht:[{title_up}]({nav_up})'
+            
+        # Jetzt diese Liste auswerten, die eigene Datei darin finden und die Nachbarn verlinken
+        if file_list and len(file_list) > 1:
             try:
-                myindex = chaptermeta.includes_list.index(co_da.sourcefile_name)
+                myindex = file_list.index(co_da.sourcefile_name)
             except ValueError:
                 print(f"'{co_da.sourcefile_name}' ist nicht in der include-Liste"
                       f" von {the_navi_file}; erhält also keine Navigation.")
-            else:
-                print(f"Myindex für chapternavi ist {myindex}")
-                a_vor = ""
-                a_nach = ""
-                a_up = ""
-                if myindex > 0:
-                    nav_vor = chaptermeta.includes_list[myindex - 1].rsplit('.', 1)[0] + ".html"
-                    title_vor, _ = get_title_prio_from_html(co_da.aktpath / nav_vor, flag_full_title=True)
-                    a_vor = f'zurück&nbsp;zu&nbsp;[{title_vor}]({nav_vor})&nbsp;&nbsp;&#8678;&nbsp;&nbsp;'
-                if myindex < len(chaptermeta.includes_list) - 1:
-                    nav_nach = chaptermeta.includes_list[myindex + 1].rsplit('.', 1)[0] + ".html"
-                    title_nach, _ = get_title_prio_from_html(co_da.aktpath / nav_nach, flag_full_title=True)
-                    a_nach = f'&nbsp;&nbsp;&#8680;&nbsp;&nbsp;weiter&nbsp;zu&nbsp;[{title_nach}]({nav_nach})'
-                if chaptermeta.generate_chapter_file and chaptermeta.force_pdf_stem:
-                    nav_up = chaptermeta.force_pdf_stem + ".html"
-                    title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
-                else:
-                    nav_up = the_navi_file.rsplit('.', 1)[0] + ".html"
-                    title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
-                a_up = f'Übersicht:[{title_up}]({nav_up})'
-                navi_code = CHAPTER_NAVI.format(a_vor, a_up, a_nach)
-                return navi_code
+                return ""
+        
+            print(f"Myindex für chapternavi ist {myindex}")
+            
+            if myindex > 0:
+                nav_vor = file_list[myindex - 1].rsplit('.', 1)[0] + ".html"
+                title_vor, _ = get_title_prio_from_html(co_da.aktpath / nav_vor, flag_full_title=True)
+                a_vor = f'zurück&nbsp;zu&nbsp;[{title_vor}]({nav_vor})&nbsp;&nbsp;&#8678;&nbsp;&nbsp;'
+            if myindex < len(file_list) - 1:
+                nav_nach = file_list[myindex + 1].rsplit('.', 1)[0] + ".html"
+                title_nach, _ = get_title_prio_from_html(co_da.aktpath / nav_nach, flag_full_title=True)
+                a_nach = f'&nbsp;&nbsp;&#8680;&nbsp;&nbsp;weiter&nbsp;zu&nbsp;[{title_nach}]({nav_nach})'
+            navi_code = CHAPTER_NAVI.format(a_vor, a_up, a_nach)
+            return navi_code
+
+    elif the_navi_file:
+        print(f"...Datei {the_navi_file} existiert aber nicht!")
     return ""
     
 

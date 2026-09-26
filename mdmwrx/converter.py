@@ -164,7 +164,7 @@ def convert2html(co_da: 'Convert_Data') -> bool:
     style_slides_files_list = []
     style_no_slides_files_list = []
     style_list = ['master']
-    if  co_da.c_o.inc_style_list:
+    if co_da.c_o.inc_style_list:
         style_list += co_da.c_o.inc_style_list 
     if co_da.mymeta.inc_style_list:
         style_list += co_da.mymeta.inc_style_list
