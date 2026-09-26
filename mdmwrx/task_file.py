@@ -24,7 +24,10 @@ from mdmwrx.yamlread import get_yaml_dict_from_md
 from mdmwrx.converter import do_convert, SLIDE_FORMATE
 from mdmwrx.config import Config_Obj, relpath_2_root
 from mdmwrx.tools import alte_Dateien_vorhanden   # debug
-from mdmwrx.task_sidefiles import make_sidebar_file, overwrite_if_changed, get_title_prio_from_html
+from mdmwrx.task_sidefiles import make_sidebar_file, \
+                                  overwrite_if_changed, \
+                                  get_title_prio_from_html, \
+                                  get_folder_filename_title_yaml   # noqa: E126
 
 
 @dataclass
@@ -58,9 +61,12 @@ class MdYamlMeta:
 class Convert_Data:
     """ Diese reine Daten-Klasse vereint notwendige Daten, davon zwei weitere Datenklassen, 
         welche für die Konvertierung von Dateien nötig sind.
+        Ein Objekt davon ist dateispezifisch (während c_o, das Config-Objekt, für den Verzeichnisbaum steht).
+        Es wird mehreren Funktionen als Parameter übergeben.
     """
     c_o: Config_Obj
     aktpath: Path
+    sourcefile_name: str
     tmp_filestem: str
     mymeta: MdYamlMeta
 
@@ -155,6 +161,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     tmp_preproc_file = path / f'{tmp_filestem}_preproc.md'
     tmp_concat_file = path / f'{tmp_filestem}_concat.md'
     chapterfilecontent = []
+    co_da = Convert_Data(c_o, path, sourcefile.name, tmp_filestem, mymeta)
 
     if mymeta.generate_chapter_file and mymeta.force_pdf_stem:
         print("Oh, generiere Chapter_File")
@@ -212,40 +219,15 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     if mymeta.generate_chapter_file:
         overwrite_if_changed(c_o, chapter_file, "\n".join(chapterfilecontent))
 
-    # Wenn die aktuelle Datei jedoch ein Abschnitt eines Kapitels ist, so sollte eine Navigation am Ende erzeugt werden            
-    if mymeta.chapter_navi_file and (path / mymeta.chapter_navi_file).is_file():
-        chaptermeta = get_meta_from_mdyaml(c_o, path / mymeta.chapter_navi_file)
-        if len(chaptermeta.includes_list) > 1:
-            try:
-                myindex = chaptermeta.includes_list.index(sourcefile.name)
-            except ValueError:
-                print(f"User-Error: diese Datei '{sourcefile.name}'kommt in der include-Liste"
-                      f" der angegebenen Datei {mymeta.chapter_navi_file} nicht vor")
-            else:
-                print(f"Myindex für chapternavi ist {myindex}")
-                a_vor = ""
-                a_nach = ""
-                a_up = ""
-                if myindex > 0:
-                    nav_vor = chaptermeta.includes_list[myindex - 1].rsplit('.', 1)[0] + ".html"
-                    title_vor, _ = get_title_prio_from_html(path / nav_vor, flag_full_title=True)
-                    a_vor = f'zurück&nbsp;zu&nbsp;[{title_vor}]({nav_vor})&nbsp;&nbsp;&#8678;&nbsp;&nbsp;'
-                if myindex < len(chaptermeta.includes_list) - 1:
-                    nav_nach = chaptermeta.includes_list[myindex + 1].rsplit('.', 1)[0] + ".html"
-                    title_nach, _ = get_title_prio_from_html(path / nav_nach, flag_full_title=True)
-                    a_nach = f'&nbsp;&nbsp;&#8680;&nbsp;&nbsp;weiter&nbsp;zu&nbsp;[{title_nach}]({nav_nach})'
-                if chaptermeta.generate_chapter_file and chaptermeta.force_pdf_stem:
-                    nav_up = chaptermeta.force_pdf_stem + ".html"
-                    title_up, _ = get_title_prio_from_html(path / nav_up, flag_full_title=True)
-                else:
-                    nav_up = mymeta.chapter_navi_file.rsplit('.', 1)[0] + ".html"
-                    title_up, _ = get_title_prio_from_html(path / nav_up, flag_full_title=True)
-                a_up = f'Übersicht:[{title_up}]({nav_up})'
-                navi_code = CHAPTER_NAVI.format(a_vor, a_up, a_nach)
-                with open(tmp_preproc_file, 'a') as prepro:
-                    prepro.write(navi_code)
+    # Wenn die aktuelle Datei z.B. ein Abschnitt eines Kapitels 
+    #  oder eine alphabetische Navigation eingestellt ist,
+    #  so sollte eine Navigation am Ende erzeugt werden:
+    navi_code = get_inline_navi(co_da)
+    if navi_code:
+        with open(tmp_preproc_file, 'a') as prepro:
+            prepro.write(navi_code)
 
-    do_convert(Convert_Data(c_o, path, tmp_filestem, mymeta))  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
+    do_convert(co_da)  # Wenn Konvertierung nicht erfolgreich: Abbruch dort!
 
     if mymeta.force_ignore_pdfs:
         endungen = ['.html']    
@@ -271,7 +253,7 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
 
         # alte immer umbenennen, auch wenn sie nicht ersetzt werden (dann müssen sie trotzdem weg)
         try:
-            (path / f'{use_file_stem}{endung}').rename(path / f'_mdm_old-{c_o.poll_generation}_{use_file_stem}{endung}')
+            (path / f'{use_file_stem}{endung}').rename(path / f'_mdm_old-{c_o.poll_generation}__{use_file_stem}{endung}')
         except FileNotFoundError:
             pass
 
@@ -301,6 +283,46 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     return True, 1
 
 
+def get_inline_navi(co_da: "Convert_Data") -> str:
+    # Wenn eine Navigation am Ende erwünscht ist, wird sie hier erzeugt und als String zurückgegeben.
+    the_navi_file = co_da.mymeta.chapter_navi_file
+    if not the_navi_file:
+        _, _, diryamldict = get_folder_filename_title_yaml(co_da.aktpath)
+        the_navi_file = diryamldict.get_str("m²_chapter_navi")
+        print("diryamldict mit " + the_navi_file)
+    if the_navi_file and (co_da.aktpath / the_navi_file).is_file():
+        chaptermeta = get_meta_from_mdyaml(co_da.c_o, co_da.aktpath / the_navi_file)
+        if chaptermeta.includes_list and len(chaptermeta.includes_list) > 1:
+            try:
+                myindex = chaptermeta.includes_list.index(co_da.sourcefile_name)
+            except ValueError:
+                print(f"'{co_da.sourcefile_name}' ist nicht in der include-Liste"
+                      f" von {the_navi_file}; erhält also keine Navigation.")
+            else:
+                print(f"Myindex für chapternavi ist {myindex}")
+                a_vor = ""
+                a_nach = ""
+                a_up = ""
+                if myindex > 0:
+                    nav_vor = chaptermeta.includes_list[myindex - 1].rsplit('.', 1)[0] + ".html"
+                    title_vor, _ = get_title_prio_from_html(co_da.aktpath / nav_vor, flag_full_title=True)
+                    a_vor = f'zurück&nbsp;zu&nbsp;[{title_vor}]({nav_vor})&nbsp;&nbsp;&#8678;&nbsp;&nbsp;'
+                if myindex < len(chaptermeta.includes_list) - 1:
+                    nav_nach = chaptermeta.includes_list[myindex + 1].rsplit('.', 1)[0] + ".html"
+                    title_nach, _ = get_title_prio_from_html(co_da.aktpath / nav_nach, flag_full_title=True)
+                    a_nach = f'&nbsp;&nbsp;&#8680;&nbsp;&nbsp;weiter&nbsp;zu&nbsp;[{title_nach}]({nav_nach})'
+                if chaptermeta.generate_chapter_file and chaptermeta.force_pdf_stem:
+                    nav_up = chaptermeta.force_pdf_stem + ".html"
+                    title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
+                else:
+                    nav_up = the_navi_file.rsplit('.', 1)[0] + ".html"
+                    title_up, _ = get_title_prio_from_html(co_da.aktpath / nav_up, flag_full_title=True)
+                a_up = f'Übersicht:[{title_up}]({nav_up})'
+                navi_code = CHAPTER_NAVI.format(a_vor, a_up, a_nach)
+                return navi_code
+    return ""
+    
+
 def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYamlMeta:
     """ - Liefert eine Auswahl an verwertbaren Metadaten als MdYamlMeta-Objekt
           - s.o.
@@ -324,6 +346,7 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
 
     # print(yaml_dict)    # nur für debugging
     # Merke: default bei .get() wird nur genommen, wenn gar kein Wert gesetzt ist!
+    # Das ist bei get_str anders, da wird gegen den leeren String getestet.
     mymeta.gen_slides_flag = yaml_dict.get_bool("m²_generate_slides", c_o.flag_gen_slides, accept_char_as_true="kK")
     if mymeta.gen_slides_flag and str(yaml_dict.get("m²_generate_slides")).lower().startswith("k"):
         mymeta.keep_slides_html_flag = True
@@ -339,6 +362,7 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
     if mymeta.generate_chapter_file and not mymeta.force_pdf_stem:
         print("Error: no generate_chapter without force_pdf_stem")
         mymeta.generate_chapter_file = False
+    # Die erzeugte Chapterdatei wird dann folgenden Wert gesetzt haben:
     mymeta.is_generated = yaml_dict.get_bool("m²_this_file_is_generated_and_will_be_overwritten")
     
     mymeta.lang = yaml_dict.get("lang", c_o.lang)
@@ -348,9 +372,9 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
     
     mymeta.includes_list = yaml_dict.get_list("m²_include_after")
     
-    # Soll eine Navigation zu benachbarten Dateien eingebaut werden? Dann muss die chapte_navi-Datei gesetzt sein
+    # Soll eine Navigation zu benachbarten Dateien eingebaut werden? Dann muss die chapter_navi-Datei gesetzt sein
     #  Die Navigation folgt dann den dortigen include-Dateien
-    mymeta.chapter_navi_file = yaml_dict.get_str("m²_chapter_navi")
+    mymeta.chapter_navi_file = yaml_dict.get_str("m²_chapter_navi", c_o.chapter_navi_file)
 
     # Nun eine Liste einzufügender Style-Schnipsel-Dateien
     mymeta.inc_style_list = yaml_dict.get_list_lowered("m²_include_style")

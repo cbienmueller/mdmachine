@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """ mdmachine
-    Konvertiert Markdown-Dateien mit Docker in html und PDF
+    Konvertiert Markdown-Dateien in html und PDF
     Genutzt werden derzeit (2025-08-09)
-        + pandoc lokal installiert (per Parameter auch per Docker)
+        + pandoc lokal installiert
         + google chrome lokal installiert 
         + Java, Python als Apps 
         + lokal: Dateien zur Anreicherung von HTML
@@ -164,6 +164,6 @@ if __name__ == '__main__':
     # ### START ### #
     # ############# #
 
-    print('mdmachine Version 1.0.12pre von 2026-09-20')
+    print('mdmachine Version 1.0.12pre von 2026-09-25')
     start_your_engines()
         

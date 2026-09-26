@@ -356,11 +356,11 @@ def get_parent_section(path: 'Path') -> tuple[str, int]:
         
 def get_links_section(path: 'Path') -> tuple[str, int]:
     
-    d_i_y = path / 'mdm_dir.yaml'
+    mdy = path / 'mdm_dir.yaml'
     l_r_output = ''
     l_anzahl = 0
-    if d_i_y.is_file():
-        ydict = get_yaml_dict_from_yaml(d_i_y)
+    if mdy.is_file():
+        ydict = get_yaml_dict_from_yaml(mdy)
         if ydict:
             links = ydict.get("m²_links")
             linkoutput, l_anzahl = format_yaml_links(links)
@@ -579,17 +579,17 @@ def get_folder_filename_title_yaml(folder_path: 'Path') -> tuple[str, str, 'Y_di
         * Strings sind leer, wenn keine Datei gefunden wurde
     """
     # Vorbereitung
-    d_i_y = folder_path / 'mdm_dir.yaml'
-    # print("Lese Folder-Info von ", d_i_y)
+    mdy = folder_path / 'mdm_dir.yaml'
+    # print("Lese Folder-Info von ", mdy)
     folder_title = ''
     folder_filename = ''
-    d_i_y_dict: Y_dict = valid_Y_dict({})
-    if d_i_y.is_file():
-        # d_i_y einlesen in d_i_y_dict
-        d_i_y_dict = get_yaml_dict_from_yaml(d_i_y)
-        if d_i_y_dict:
-            folder_filename = d_i_y_dict.get_str("m²_indexfilename")
-            folder_title = d_i_y_dict.get_str("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
+    mdy_dict: Y_dict = valid_Y_dict({})
+    if mdy.is_file():
+        # mdy einlesen in mdy_dict
+        mdy_dict = get_yaml_dict_from_yaml(mdy)
+        if mdy_dict:
+            folder_filename = mdy_dict.get_str("m²_indexfilename")
+            folder_title = mdy_dict.get_str("m²_overridetitle")    # eigentlich unlogisch, aber wenn der User es will...
     if not folder_filename or not (folder_path / folder_filename).is_file():
         folder_filename = 'index.html'
     if not (folder_path / folder_filename).is_file():
@@ -601,7 +601,7 @@ def get_folder_filename_title_yaml(folder_path: 'Path') -> tuple[str, str, 'Y_di
         if not folder_title:  # jetzt holen wir's lieber aus der Datei; notfalls Verzeichnisname
             folder_title, _ = get_title_prio_from_html(folder_path / folder_filename, folder_path.name)
         # print(f'Folderdatei {folder_filename} im Pfad {folder_path.name} mit Titel {folder_title}')
-        return folder_filename, folder_title, d_i_y_dict 
+        return folder_filename, folder_title, mdy_dict 
         
     return "", folder_path.name, valid_Y_dict({})  # fast leere Rückgabe, wenn es halt keine auffindbare Datei gibt.
 

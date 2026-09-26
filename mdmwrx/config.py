@@ -34,17 +34,22 @@ class Config_Obj:
     fixlinks: list[dict]        # (URL, title, hover) in dict
     inc_style_list: list[str]   # List of Strings als Namensbestandteile
     inc_css_list: list[str]     # List of Strings als (zu root) relative css-Pfade
-    inc_main_css: str           # Eine CSS-Datei, die auch für Sidefiles verwendet wird (-> Farbdefinitionen)
-    lang: str                   # HTML-lang-Parameter
+    
+    # nun fakultative, vorbelegte Attribute:
+    inc_main_css: str = ""              # Eine CSS-Datei, die auch für Sidefiles verwendet wird (-> Farbdefinitionen)
+    lang: str = "de-DE"                 # HTML-lang-Parameter
+    flag_gen_sitemap: bool = False      # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
+    sitemap_prefix: str = ""            # notwendiges Präfix für absolute Pfade in sitemap.txt
+    flag_gen_sidebar: bool = False      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
+    #                                   #   mit html-Dateien geführt werden?
+    flag_verbose: bool = False          # für Ausgabe von Debug-Informationen
+    flag_sup_pdf: bool = False          # PDF-Erzeugung unterdrücken
+    flag_gen_slides: bool = False       # Slides erzeugen?
+    chapter_navi_file: str = ""         # gibt es ein Chapterfile, das für eine Navigation herangezogen werden soll?
+    #                                   #  der Wert *ABC* (kein gültiger Dateiname :) 
+    #                                   #  führt zu einer alphabetischen Navigation "normaler" HTML-Dateien (ohne führendes _).
 
-    # nun fakultative, vorbelegte Attribute
-    flag_gen_sitemap: bool = False     # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
-    sitemap_prefix: str = ""           # notwendiges Präfic für absolute Pfade in sitemap.txt
-    flag_gen_sidebar: bool = False     # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
-    #                                  #   mit html-Dateien geführt werden?
-    flag_verbose: bool = False         # für Ausgabe von Debug-Informationen
-    flag_sup_pdf: bool = False         # PDF-Erzeugung unterdrücken
-    flag_gen_slides: bool = False      # Slides erzeugen?
+    # Nun die nicht über Parameter gesetzte Attribute:
     poll_generation: int = 0    # zählt für mdm_old durch, so dass keine weitere Umbenennung nötig ist
     lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
 
@@ -77,8 +82,6 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
             [],
             [],
             [],
-            "",
-            "de-DE"
         )
 
     flag_dir_is_root = (relpath == ".")
@@ -95,21 +98,24 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
         relpath.count("/"),
         flag_dir_is_root,
         flag_root_exists, 
-        yd.get("m²_cssfile_main", 'https://www.bienmueller.de/css/mdm_main.css'),
-        yd.get("m²_cssfile_md", 'https://www.bienmueller.de/css/mdm_md.css'),
-        yd.get("m²_cssfile_sb", 'https://www.bienmueller.de/css/mdm_sb.css'),
-        yd.get("m²_mainfont", 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'),
-        yd.get("m²_fixlinks", ''),
+        yd.get_str("m²_cssfile_main", 'https://www.bienmueller.de/css/mdm_main.css'),
+        yd.get_str("m²_cssfile_md", 'https://www.bienmueller.de/css/mdm_md.css'),
+        yd.get_str("m²_cssfile_sb", 'https://www.bienmueller.de/css/mdm_sb.css'),
+        yd.get_str("m²_mainfont", 'https://www.bienmueller.de/fonts/OpenSansRegular.woff2'),
+        yd.get("m²_fixlinks", ''),        # FIXME, sollte hier nicht auch eine Liste gelesen werden?
         yd.get_list_lowered("m²_include_style"),
         yd.get_list("m²_include_css"),
-        yd.get("m²_include_main_css", ""),
-        yd.get("m²_lang", "de-DE"),
-        yd.get("m²_generate_sitemap", False),
-        yd.get("m²_sitemap_prefix", ""),
-        yd.get("m²_generate_sidebar", False),
-        yd.get("m²_verbose", False),
-        yd.get("m²_suppress_pdf", False),
-        yd.get("m²_generate_slides", False)
+
+        yd.get_str("m²_include_main_css"),
+        yd.get_str("m²_lang", "de-DE"),
+        yd.get_bool("m²_generate_sitemap"),
+        yd.get_str("m²_sitemap_prefix"),
+        yd.get_bool("m²_generate_sidebar"),
+        yd.get_bool("m²_verbose"),
+        yd.get_bool("m²_suppress_pdf"),
+        yd.get_bool("m²_generate_slides"),
+        yd.get_str("m²_chapter_navi")
+
     )
     
             

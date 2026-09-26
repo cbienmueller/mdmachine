@@ -14,7 +14,6 @@ from mdmwrx.tools import debug
 
 
 """ führt die eigentlich md->html->pdf - Konvertierung durch. Ggf. doppelt, wenn auch Slides gewünscht sind.
-    Dabei wird so oder so nur ein Docker-Aufruf gemacht.
 """
 
 CONVERT_VERBOSE = False
@@ -66,7 +65,7 @@ def filtererrors(fehlerblock: str) -> str:
     ignore_patterns = [':INFO:', ':WARNING:', 'system_bus_socket', 'Fontconfig error:', 
                        'bytes written', ':ERROR:bus.', ':ERROR:kwallet', 'cannot touch', 
                        'org.freedesktop.DBus', 'org.freedesktop.portal.GlobalShortcuts.Activated',
-                       'PHONE_REGISTRATION_ERROR', 'DEPRECATED_ENDPOINT']
+                       'PHONE_REGISTRATION_ERROR', 'DEPRECATED_ENDPOINT', 'mcs_client']
     ausgabe = []
     for zeile in fehlerblock.splitlines():
         auslassen = False
@@ -78,22 +77,22 @@ def filtererrors(fehlerblock: str) -> str:
     return '\n'.join(ausgabe)
 
 
-def do_convert(cd: 'Convert_Data'): 
-    erfolg = convert2html(cd)
-    if cd.mymeta.suppress_pdf_flag:
+def do_convert(co_da: 'Convert_Data'): 
+    erfolg = convert2html(co_da)
+    if co_da.mymeta.suppress_pdf_flag:
         return 
-    if not cd.c_o.browser_engine:
+    if not co_da.c_o.browser_engine:
         print("Kein Browser gefunden, daher keine PDF-Generierung!")
     else:
         if erfolg:
-            erfolg = convert2A4pdf(cd)
-        if erfolg and cd.mymeta.gen_slides_flag:
-            erfolg = convert2slides(cd)
+            erfolg = convert2A4pdf(co_da)
+        if erfolg and co_da.mymeta.gen_slides_flag:
+            erfolg = convert2slides(co_da)
 
     if not erfolg:
         if not CONVERT_VERBOSE:
             # Aufräumen...
-            for tf in cd.aktpath.glob(f'{cd.tmp_filestem}*'):
+            for tf in co_da.aktpath.glob(f'{co_da.tmp_filestem}*'):
                 try:
                     tf.unlink()
                 except Exception:
@@ -102,62 +101,19 @@ def do_convert(cd: 'Convert_Data'):
         print("Abbruch wegen Konvertierungsfehler")
         exit()
         
-        
-def call_my_docker(cd):
-    """Ruft 'mein' Dockerimage auf und startet dort das im Verzeichnis befindliche _mdmtemp..._todo.sh
-    """
-    mount_path = f'--mount type=bind,source={cd.aktpath},target=/data'
-    mount_medien = f' --mount type=bind,source={cd.c_o.medien_path},target=/opt/medien'
-    mount_tmp = '--mount type=bind,source=/tmp/mdmachine,target=/tmp'
-    uid = os.geteuid()
-    gid = os.getegid()
-    errfiltered = ''
-    if not cd.mymeta.lang:
-        cd.mymeta.lang = 'de'
-    kommando = [
-        'docker', 'run', '--entrypoint', 'bash', '--rm', 
-        mount_path,
-        mount_medien,
-        mount_tmp, 
-        '--user', f'{uid}:{gid}', 
-        'pandoc/core:3.7-ubuntu',          # war 'biec/pandocker',                               # mein docker image
-        f'{cd.tmp_filestem}_todo.sh']
-
-    print("Starte Docker...")
-    p = subprocess.Popen(" ".join(kommando), shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE) 
-    out, err = "", ""
-    try:
-        out, err = p.communicate(timeout=31)   # 31 Sekunden Timeout sollten jetzt in Docker reichen...
-    except subprocess.TimeoutExpired:
-        p.kill()
-        print("pandoc@docker nicht schnell genug fertig!")
-        # out, err = p2.communicate()
-    except Exception as e:
-        print("Unbekannter Fehler:")
-        print(e)
-
-    print("...beendet")
-    print('docker (pandoc) fertig')
-    if out:
-        print("\nstdout:\n" + out.decode('utf-8'))
-    if err:
-        errfiltered = filtererrors(err.decode('utf-8'))
-    if errfiltered:
-        print("\nstderr:\n" + errfiltered)
     
-    
-def call_my_script(cd):
+def call_my_script(co_da):
     """Ruft das im Verzeichnis befindliche _mdmtemp..._todo.sh DIREKT auf
     """
     
     # print("  ToDo-Skript startet")
     kommando = [
         'bash',
-        f'{cd.tmp_filestem}_todo.sh']
+        f'{co_da.tmp_filestem}_todo.sh']
         
     out, err = "", ""
     prev_cwd = Path.cwd()
-    os.chdir(cd.aktpath)
+    os.chdir(co_da.aktpath)
     try:
         p = subprocess.Popen(" ".join(kommando), shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE) 
         try:
@@ -183,45 +139,44 @@ def call_my_script(cd):
         print("\nstderr:\n" + errfiltered)
     
 
-def get_inc_txt_filename(cd, inc_name, inc_type):
+def get_inc_txt_filename(co_da, inc_name, inc_type):
     """ Schaut ob eine geeignete Datei im Medienverzeichnis von mdmachine zu finden ist.
     """
     save_name = "".join(x for x in inc_name if (x.isalnum() or x in "_-"))
     for prefix in ["mdm", "user"]:
-        realpath = cd.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
+        realpath = co_da.c_o.medien_path / f'{prefix}_{save_name}_{inc_type}.txt'
         if realpath.is_file():
             return (f'{prefix}_{save_name}_{inc_type}.txt')
     return ""
 
 
-def convert2html(cd):
+def convert2html(co_da):
     """Konvertiere eine von pre_proc generierte Markdowndatei in ggf. mehrere HTML-Dateien.
         - mymeta.gen_slides entscheidet, ob überhaupt weitere HTML-Dateien für SLIDES erzeugt werden
         - mymeta.slide_width_list enthält eine Liste der zu erzeugenden SLIDE-Formate (auch bei einem eizelnen Wert in YAML)
     """
-    print(f'''Konvertiere '{cd.mymeta.title}' nun in HTML {", auch für Slides" if cd.mymeta.gen_slides_flag else ""}''')
+    print(f'''Konvertiere '{co_da.mymeta.title}' nun in HTML {", auch für Slides" if co_da.mymeta.gen_slides_flag else ""}''')
 
-    USE_DOCKER = False
-    medienurl = '/opt/medien' if USE_DOCKER else str(cd.c_o.medien_path)
+    medienurl = str(co_da.c_o.medien_path)
     
     # Es werden Styles gesucht, die entweder immer, nur in Slides oder nur in Nicht-Slides eingefügt werden 
     style_files_list = []
     style_slides_files_list = []
     style_no_slides_files_list = []
-    style_list = ['master'] + cd.c_o.inc_style_list + cd.mymeta.inc_style_list
+    style_list = ['master'] + co_da.c_o.inc_style_list + co_da.mymeta.inc_style_list
     for inc_style in style_list:
         gibt_slidestyle_flag = False
         # braucht und gibt es einen user_<bla>_style_slides.txt?
-        if cd.mymeta.gen_slides_flag:
-            inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style_slides')
-            debug(cd.c_o, "inc_style_slides_filename", inc_style_filename)
+        if co_da.mymeta.gen_slides_flag:
+            inc_style_filename = get_inc_txt_filename(co_da, inc_style, 'style_slides')
+            debug(co_da.c_o, "inc_style_slides_filename", inc_style_filename)
             if inc_style_filename:
                 style_slides_files_list += ['-A', f'{medienurl}/{inc_style_filename}']
                 gibt_slidestyle_flag = True
         
         # gibt es einen user_<bla>_style.txt?
-        inc_style_filename = get_inc_txt_filename(cd, inc_style, 'style')
-        debug(cd.c_o, "inc_style_filename", inc_style_filename)
+        inc_style_filename = get_inc_txt_filename(co_da, inc_style, 'style')
+        debug(co_da.c_o, "inc_style_filename", inc_style_filename)
         if inc_style_filename:
             if gibt_slidestyle_flag:
                 # Wird also nur für nicht-Slides verwendet
@@ -237,29 +192,29 @@ def convert2html(cd):
         '-s']                                               # pandoc soll stand-alone erzeugen (mit header, body usw.)
         
     # Titel wurde aus dem Dateinamen errechnet wenn kein Titel im Source-md enthalten ist. Dann hier einsetzen!
-    if cd.mymeta.force_title:
+    if co_da.mymeta.force_title:
         html_todo_base += [
-            '--metadata', f'pagetitle="{cd.mymeta.title}"']  
+            '--metadata', f'pagetitle="{co_da.mymeta.title}"']  
 
     # Einzubindende CSS-Dateien sind nicht mehr hart verdrahtet, sondern werden ggf. mdm_root.yaml entnommen
-    with open((cd.aktpath / f'{cd.tmp_filestem}_header.txt'), 'w') as f:
-        f.write(DYN_HEADER.format(cd.c_o.mainfont,
-                                  cd.c_o.cssfile_main,
-                                  cd.c_o.cssfile_md))
-        for cssitem in cd.c_o.inc_css_list:
-            f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cssitem}">\n')
-        if cd.c_o.inc_main_css:
-            if cd.c_o.inc_main_css.lower().startswith('https://') or \
-               cd.c_o.inc_main_css.lower().startswith('http://'):
-                f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.c_o.inc_main_css}">\n')
+    with open((co_da.aktpath / f'{co_da.tmp_filestem}_header.txt'), 'w') as f:
+        f.write(DYN_HEADER.format(co_da.c_o.mainfont,
+                                  co_da.c_o.cssfile_main,
+                                  co_da.c_o.cssfile_md))
+        for cssitem in co_da.c_o.inc_css_list:
+            f.write(f'<link rel="Stylesheet" type="text/css" href="{co_da.mymeta.relpath2r}/{cssitem}">\n')
+        if co_da.c_o.inc_main_css:
+            if co_da.c_o.inc_main_css.lower().startswith('https://') or \
+               co_da.c_o.inc_main_css.lower().startswith('http://'):
+                f.write(f'<link rel="Stylesheet" type="text/css" href="{co_da.c_o.inc_main_css}">\n')
             else:   
-                f.write(f'<link rel="Stylesheet" type="text/css" href="{cd.mymeta.relpath2r}/{cd.c_o.inc_main_css}">\n')
+                f.write(f'<link rel="Stylesheet" type="text/css" href="{co_da.mymeta.relpath2r}/{co_da.c_o.inc_main_css}">\n')
         
     html_todo_base += [    
-        '-V', f'lang="{cd.mymeta.lang}"',                   # kommt aus YAML-Einträgen
+        '-V', f'lang="{co_da.mymeta.lang}"',                   # kommt aus YAML-Einträgen
         '--toc', '--toc-depth=2',                           # Regeln für Inhaltsverzeichnis
         '-M', 'document-css=false',                         # unterdrücke CSS von pandoc
-        '-H', f'{cd.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
+        '-H', f'{co_da.tmp_filestem}_header.txt',              # mit den generierten CSS-Datei-URLs usw.
         '-H', f'{medienurl}/mdm_master_header.txt',         # füge script in den header ein
         f'--template={medienurl}/m2_template.html',         # nutze ein modifiziertes Template
         '--syntax-highlighting', f'{medienurl}/solarizeddark.theme',  # wähle universellen Syntax-Highlighting-Stil
@@ -267,15 +222,15 @@ def convert2html(cd):
         style_files_list                                    # include-Styles für alle Ausgabetypen
     
     html_todo = html_todo_base + [
-        '-o', f'{cd.tmp_filestem}.html',                   # Standard-Zieldatei
-        f'{cd.tmp_filestem}_preproc.md'] + \
+        '-o', f'{co_da.tmp_filestem}.html',                   # Standard-Zieldatei
+        f'{co_da.tmp_filestem}_preproc.md'] + \
         style_no_slides_files_list                      # include-Styles für alle Ausgabetypen AUSSER Slides
 
     # '-A', f'{medienurl}/mdm_footer.txt',                     # füge HTML + Script am Ende des Bodys ein    
     
     slides_todo = []                                    # Liste der Parameter um HTML-Slides zu erzeugen
-    if cd.mymeta.gen_slides_flag:
-        for s_format in cd.mymeta.slide_format_list:
+    if co_da.mymeta.gen_slides_flag:
+        for s_format in co_da.mymeta.slide_format_list:
             slides_todo += html_todo_base.copy()              
             slide_format_filename = SLIDE_FORMATE.get(s_format)
             # print ("slide_format_filename = ", slide_format_filename)
@@ -289,23 +244,18 @@ def convert2html(cd):
                 s_format_ext = "_a5"
                 
             slides_todo += [
-                '-o', f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html']        # andere Zieldatei
+                '-o', f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.html']        # andere Zieldatei
             
             slides_todo += style_slides_files_list              # # include-Styles spezifisch für alle Slides
             slides_todo += additional_stylefile
             slides_todo += [
-                f'{cd.tmp_filestem}_preproc.md',                # temporäre Eingabedatei nach Präprozessing
+                f'{co_da.tmp_filestem}_preproc.md',                # temporäre Eingabedatei nach Präprozessing
                 '\n'] 
 
             # '-A', f'{medienurl}/mdm_footer_slides.txt',     # füge HTML am Ende des Bodys ein
 
-    with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
-        if USE_DOCKER:
-            f.write('# Shellskript, das im dockercontainer ausgeführt wird\n'
-                    'export XDG_CONFIG_HOME=/tmp/m²_config\n'
-                    'export XDG_CACHE_HOME=/tmp/m²_cache\n')
-        else:
-            f.write('# Shellskript, das direkt ausgeführt wird\n')
+    with open((co_da.aktpath / f'{co_da.tmp_filestem}_todo.sh'), 'w') as f:
+        f.write('# Shellskript, das direkt ausgeführt wird\n')
         f.write('echo "    Starting: convert to html"\n')
         f.write(" ".join(html_todo))
         f.write("\n")
@@ -313,32 +263,29 @@ def convert2html(cd):
         f.write("\n")
         f.write('echo "    Finished: convert to HTML"\n')
             
-    if USE_DOCKER:
-        call_my_docker(cd) 
-    else:
-        call_my_script(cd)
+    call_my_script(co_da)
         
-    if not (cd.aktpath / f'{cd.tmp_filestem}.html').exists():
-        print(f'ERROR & Abbruch! Zieldatei {cd.tmp_filestem}.html nicht gefunden')
+    if not (co_da.aktpath / f'{co_da.tmp_filestem}.html').exists():
+        print(f'ERROR & Abbruch! Zieldatei {co_da.tmp_filestem}.html nicht gefunden')
         return False
 
     return True
   
 
-def convert2A4pdf(cd):
-    print(f'''Konvertiere '{cd.mymeta.title}' nun in A4-PDF''')
+def convert2A4pdf(co_da):
+    print(f'''Konvertiere '{co_da.mymeta.title}' nun in A4-PDF''')
     
     dotodo_go = [
-        cd.c_o.browser_engine,  
+        co_da.c_o.browser_engine,  
         '--no-sandbox', '--headless=true', '--disable-gpu', '--disable-search-engine-choice-screen',
         '--run-all-compositor-stages-before-draw', '--no-pdf-header-footer',
         '--no-margins', '--virtual-time-budget=400000',
-        f'--print-to-pdf={cd.tmp_filestem}_A4.pdf', f'{cd.tmp_filestem}.html']
+        f'--print-to-pdf={co_da.tmp_filestem}_A4.pdf', f'{co_da.tmp_filestem}.html']
 
-    dbg("convert2A4pdf", "ToDo-Skript", f'{cd.tmp_filestem}_todo.sh')
+    dbg("convert2A4pdf", "ToDo-Skript", f'{co_da.tmp_filestem}_todo.sh')
     
-    with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
-        f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
+    with open((co_da.aktpath / f'{co_da.tmp_filestem}_todo.sh'), 'w') as f:
+        f.write('# Shellskript\n'
                 'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                 'export XDG_CACHE_HOME=/tmp/m²_cache\n')
         f.write('echo "    Starting: convert to A4.pdf"\n')
@@ -347,19 +294,18 @@ def convert2A4pdf(cd):
         f.write('echo "    Finished: convert to A4.pdf"\n')
         f.write("\n")
 
-    # call_my_docker(cd)
-    call_my_script(cd)
+    call_my_script(co_da)
     
-    if not (cd.aktpath / f'{cd.tmp_filestem}_A4.pdf').exists():
-        print(f'ERROR & Abbruch! Zieldatei {cd.tmp_filestem}_A4.pdf nicht gefunden')
+    if not (co_da.aktpath / f'{co_da.tmp_filestem}_A4.pdf').exists():
+        print(f'ERROR & Abbruch! Zieldatei {co_da.tmp_filestem}_A4.pdf nicht gefunden')
         return False
 
     return True
 
 
-def convert2slides(cd):
-    for s_format in cd.mymeta.slide_format_list:
-        print(f'''Konvertiere '{cd.mymeta.title}' nun in {s_format}-PDF''')
+def convert2slides(co_da):
+    for s_format in co_da.mymeta.slide_format_list:
+        print(f'''Konvertiere '{co_da.mymeta.title}' nun in {s_format}-PDF''')
 
         slide_format_filename = SLIDE_FORMATE.get(s_format)
         if slide_format_filename:
@@ -367,18 +313,18 @@ def convert2slides(cd):
         else:
             s_format_ext = "_a5"
             
-        slides_html_filename = f'{cd.tmp_filestem}_SLIDES{s_format_ext}.html'
-        slides_pdf_filename = f'{cd.tmp_filestem}_SLIDES{s_format_ext}.pdf'
+        slides_html_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.html'
+        slides_pdf_filename = f'{co_da.tmp_filestem}_SLIDES{s_format_ext}.pdf'
         
         slides_todo = [
-            cd.c_o.browser_engine, 
+            co_da.c_o.browser_engine, 
             '--no-sandbox', '--headless', '--disable-gpu', '--disable-search-engine-choice-screen',
             '--run-all-compositor-stages-before-draw', '--print-to-pdf-no-header',
             '--no-margins', '--virtual-time-budget=400000',
             f'--print-to-pdf={slides_pdf_filename}', slides_html_filename]
         
-        with open((cd.aktpath / f'{cd.tmp_filestem}_todo.sh'), 'w') as f:
-            f.write('# Shellskript, das ggf. im dockercontainer ausgeführt wird\n'
+        with open((co_da.aktpath / f'{co_da.tmp_filestem}_todo.sh'), 'w') as f:
+            f.write('# Shellskript\n'
                     'export XDG_CONFIG_HOME=/tmp/m²_config\n'
                     'export XDG_CACHE_HOME=/tmp/m²_cache\n')
             f.write(f'echo "    Starting: convert to SLIDE{s_format_ext}.pdf"\n')
@@ -386,9 +332,9 @@ def convert2slides(cd):
             f.write("\n")
             f.write(f'echo "    Finished: convert to SLIDE{s_format_ext}.pdf"\n')
             
-        call_my_script(cd)
+        call_my_script(co_da)
         
-        if not (cd.aktpath / slides_pdf_filename).exists():
+        if not (co_da.aktpath / slides_pdf_filename).exists():
             print(f'ERROR & Abbruch! Zieldatei {slides_pdf_filename} nicht gefunden')
             return False
 
