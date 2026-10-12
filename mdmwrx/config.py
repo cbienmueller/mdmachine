@@ -1,5 +1,4 @@
 """ config.py
-
     liest nach Möglichkeit eine mdm_root.yaml ein und setzt allgemeine Werte wie CSS-Datei-URLs.
     Bei Fehlen wird der Verzeichnisbaum nach oben gegangen.
     Bei endgültigem Fehlen werden Standardwerte angenommen um ein Funktionieren sicherzustellen.
@@ -38,8 +37,7 @@ class Config_Obj:
     # nun fakultative, vorbelegte Attribute:
     inc_main_css: str = ""              # Eine CSS-Datei, die auch für Sidefiles verwendet wird (-> Farbdefinitionen)
     lang: str = "de-DE"                 # HTML-lang-Parameter
-    flag_gen_sitemap: bool = False      # Soll automatisch eine sitemap (im root-Verzeichnis) geführt werden?
-    sitemap_prefix: str = ""            # notwendiges Präfix für absolute Pfade in sitemap.txt
+    website_url: str = ""               # notwendiges Präfix für absolute URLs in sitemap.txt und canonical_link
     flag_gen_sidebar: bool = False      # Soll auch ohne dir_yaml automatisch eine sidebar (Navigation) in jedem Verzeichnis 
     #                                   #   mit html-Dateien geführt werden?
     flag_verbose: bool = False          # für Ausgabe von Debug-Informationen
@@ -48,7 +46,7 @@ class Config_Obj:
     chapter_navi_file: str = ""         # gibt es ein Chapterfile, das für eine Navigation herangezogen werden soll?
     #                                   #  der Wert *ABC* (kein gültiger Dateiname :) 
     #                                   #  führt zu einer alphabetischen Navigation "normaler" HTML-Dateien (ohne führendes _).
-
+    
     # Nun die nicht über Parameter gesetzte Attribute:
     poll_generation: int = 0    # zählt für mdm_old durch, so dass keine weitere Umbenennung nötig ist
     lastconverted: dict = field(default_factory=dict)  # Nimmt Zeitstempel von Konvertierungen auf.
@@ -64,7 +62,7 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
         
     rootpath = startpath
     # Schritt 2: root suchen
-    relpath = relpath_2_root(startpath)
+    relpath, subpath = relpath_2_root(startpath)
     if not relpath:
         print("Found no mdm_root.yaml.")
         return Config_Obj(
@@ -108,29 +106,30 @@ def get_config_obj(startpath: Path, medien_path: Path) -> Config_Obj:   # Pfad i
 
         yd.get_str("m²_include_main_css"),
         yd.get_str("m²_lang", "de-DE"),
-        yd.get_bool("m²_generate_sitemap"),
-        yd.get_str("m²_sitemap_prefix"),
+        yd.get_str("m²_website_url"),
         yd.get_bool("m²_generate_sidebar"),
         yd.get_bool("m²_verbose"),
         yd.get_bool("m²_suppress_pdf"),
         yd.get_bool("m²_generate_slides"),
-        yd.get_str("m²_chapter_navi")
+        yd.get_str("m²_chapter_navi"),
 
     )
-    
-            
-def relpath_2_root(path: Path) -> str:
+
+
+def relpath_2_root(path: Path) -> tuple[str, str]:
     """ Gibt den relativen Pfad (z.B. "./../..") zum Root-Verzeichnis zurück
         Ohne Root-Verzeichnis: Leerer String
         Bereits im Root-Verzeichnis: "."
     """
     relpath = "."
+    subpath = ""
     while len(str((path / relpath).resolve())) > 1:
         if (path / relpath / 'mdm_root.yaml').is_file():
-            return relpath
+            return relpath, subpath
+        subpath = (path / relpath).resolve().name + '/' + subpath
         relpath += '/..'
 
     # jetzt in Root des Filesystems
     if (path / relpath / 'mdm_root.yaml').is_file():
-        return relpath
-    return ""    
+        return relpath, subpath
+    return "", ""    

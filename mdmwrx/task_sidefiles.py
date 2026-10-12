@@ -120,7 +120,7 @@ def make_sitemap_n_timeline(c_o: 'mdmwrx.config.Config_Obj', root_path: 'Path') 
     lang = c_o.lang
     
     # ## Dateistart sitemap
-    content, urls_as_text = get_folderinfo4sitemap(root_path, "", c_o.sitemap_prefix, timeline_list)  
+    content, urls_as_text = get_folderinfo4sitemap(root_path, "", c_o.website_url, timeline_list)  
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-mdm_dir.yaml
     
@@ -131,7 +131,7 @@ def make_sitemap_n_timeline(c_o: 'mdmwrx.config.Config_Obj', root_path: 'Path') 
     output += SIDEBAR_fine
     overwrite_if_changed(c_o, sm_path, output)
 
-    if c_o.sitemap_prefix:          # nur mit prefix gibt es absolute URLS, ohne ist fehlerhaft...
+    if c_o.website_url:          # nur mit prefix gibt es absolute URLS, ohne ist fehlerhaft...
         overwrite_if_changed(c_o, st_path, urls_as_text)
         
     # ## Timeline
@@ -152,7 +152,7 @@ def get_side_navi(c_o: 'mdmwrx.config.Config_Obj', path: 'Path') -> tuple[str, s
     ri = get_root_info(c_o, path)
     timeline_list_dummy = [("2024-01-01", "dummy")]
     lang = ri.lang
-    content, _ = get_folderinfo4sitemap(ri.root_path, ri.updir_string, c_o.sitemap_prefix, timeline_list_dummy, path)
+    content, _ = get_folderinfo4sitemap(ri.root_path, ri.updir_string, c_o.website_url, timeline_list_dummy, path)
     # wird rekursiv für jedes Unterverzeichnis aufgerufen
     # lang kommt nur vom root-mdm_dir.yaml
     # timeline_list nimmt Datum und Beschreibungstext auf
@@ -162,7 +162,7 @@ def get_side_navi(c_o: 'mdmwrx.config.Config_Obj', path: 'Path') -> tuple[str, s
         
 def get_folderinfo4sitemap(root_path: Optional['Path'], 
                            relpath: str, 
-                           sitemap_prefix: str,
+                           website_url: str,
                            timeline_list: list, 
                            filespath: Optional['Path'] = None) -> tuple[str, str]:
     ''' root_path ist das normalerweise das root- Verzeichnis - bei Rekursion aber ein lokales root-V..
@@ -194,7 +194,7 @@ def get_folderinfo4sitemap(root_path: Optional['Path'],
         all_files = True
     else:
         all_files = False
-    l_section, _, urls_t = get_files_section(root_path, relpath, timeline_list, all_files, sitemap_prefix)
+    l_section, _, urls_t = get_files_section(root_path, relpath, timeline_list, all_files, website_url)
     smf_output += l_section
     urls_as_text += urls_t
 
@@ -204,7 +204,7 @@ def get_folderinfo4sitemap(root_path: Optional['Path'],
         if subdir.is_dir():
             if SB_VERBOSE:
                 print("sitemap: recurse into -> " + subdir.name)
-            content, urls_t = get_folderinfo4sitemap(subdir, relpath + subdir.name, sitemap_prefix, timeline_list, filespath)
+            content, urls_t = get_folderinfo4sitemap(subdir, relpath + subdir.name, website_url, timeline_list, filespath)
             smf_sub_output += content
             urls_as_text += urls_t
     if smf_sub_output:
@@ -221,7 +221,7 @@ def make_sidebar_file(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', do_recursiv
     output = ""
 
     navi_content, lang, ri = get_side_navi(c_o, path)
-    relpath2r = relpath_2_root(path)
+    relpath2r, subpath = relpath_2_root(path)
     
     if c_o.inc_main_css:
         if c_o.inc_main_css.lower().startswith('https://') or \
@@ -387,7 +387,7 @@ def get_files_section(path: 'Path',
                       relpath: str = "",
                       timeline_list: Optional[list[tuple[str, str]]] = None,
                       all_files: bool = True,
-                      sitemap_prefix: str = ""
+                      website_url: str = ""
                       ) -> tuple[str, int, str]:
     """ * findet und formatiert Links zu html/PDF-Dateien in demselben Verzeichnis
         * gibt deren Anzahl zurück
@@ -419,7 +419,7 @@ def get_files_section(path: 'Path',
             # yey, wir haben eine html-Datei gefunden. Sammle dies als Link, mit Title, Priorität und ggf. PDF-File
             title, prio = get_title_prio_from_html(htmlfile)  # prio aus {0 , 1, 2} für Low, Normal, High
             # und in Url-Liste für sitemap.txt vermerken
-            urls_as_text += sitemap_prefix + relpath + htmlfile.name + "\n"
+            urls_as_text += website_url + relpath + htmlfile.name + "\n"
 
             liclass = "nonindex"
             title_prefix = ""

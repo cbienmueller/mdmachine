@@ -16,6 +16,9 @@ $endif$
 $if(description-meta)$
   <meta name="description" content="$description-meta$">
 $endif$
+$if(m²_canonical_link)$
+  <link rel="canonical" href="$m²_canonical_link$" />
+$endif$
   <title>$if(title-prefix)$$title-prefix$ – $endif$$pagetitle$</title>
   <style>
     $styles.html()$

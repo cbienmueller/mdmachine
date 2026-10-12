@@ -165,7 +165,7 @@ DEMO_MDM_ROOT_YAML = """
 ## m²_include_css: ["css/design.css"]
 # m²_include_css: []
 ##
-## 2d. Eine CSS-Datei, die aber auch bei sidebat, sitemap und timeline inkludiert werden soll
+## 2d. Eine CSS-Datei, die aber auch bei sidebar, sitemap und timeline inkludiert werden soll
 ##     Dies ist der Ort für einheitliche Farbdefinitionen
 ##
 # m²_include_main_css: ""
@@ -180,16 +180,26 @@ DEMO_MDM_ROOT_YAML = """
 ##      title: 'Public Displays'
 ##      hover: Klick mich!
 ##
-    
-## 4a. Flags 
+## 4. Website-URL
+##    Wenn der Verzeichnisbaum ab dieser mdm_root.yaml als Website hochgeladen wird,
+##    so können einige Dinge automatisch erzeugt werden:
+##      - eine sitemap.txt
+##      - der Link zur kanonischen Version der Texte (i.d.R. die direkt erzeugte HTML-Datei, nicht die von Slides)
+##    Dazu muss nur der Teil der URL VOR dem Verzeichnisbaum angegeben werden.
 ##
-## Soll im root-Verzeichenis ("hier") eine sitemap.html erzeugt werden?
-# m²_generate_sitemap: False
+##    z.B: m²_website_url: "https://www.example.com/content/"
+##    Dann sollte eine index.html, die neben dem mdm_root.yaml liegt unter 
+##      https://www.example.com/content/index.html zu erreichen sein. 
+##      Das hängt natürlich u.a. vom Upload ab.
+#   m²_website_url: ""
+##
+## 5a. Flags 
+##
 # m²_generate_sidebar: False
 # m²_verbose: False
 
 
-## 4b. Flags, die nur zum Tragen kommen, wenn in einer md-Datei dieses Flag nicht gesetzt wird
+## 5b. Flags, die nur zum Tragen kommen, wenn in einer md-Datei dieses Flag nicht gesetzt wird
 # m²_suppress_pdf: False
 # m²_generate_slides: False
 ## 

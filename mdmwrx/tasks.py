@@ -37,7 +37,7 @@ def handle_update(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', force_flag: boo
     print("Schritt 2:\n\tsidebars rekursiv erzeugen")
     make_sidebar_file(c_o, path, do_recursive=True)
     
-    if c_o.flag_gen_sitemap:
+    if c_o.website_url:
         print("Schritt 3:\n\tsitemap.html erstellen\n")
         make_sitemap_n_timeline(c_o, path)
     else:
@@ -50,7 +50,7 @@ def handle_update(c_o: 'mdmwrx.config.Config_Obj', path: 'Path', force_flag: boo
             konvertierte = handle_dir(c_o, path, do_print=False,
                                       do_sidebar=True, do_force=False,
                                       do_recursive=True, be_quiet=True)
-            if konvertierte and c_o.flag_gen_sitemap:
+            if konvertierte and c_o.website_url:
                 print("Folgeaufgabe wg. Konvertierung: sitemap.html erstellen\n")
                 make_sitemap_n_timeline(c_o, path)
                 print("Nun wieder stilles Polling")

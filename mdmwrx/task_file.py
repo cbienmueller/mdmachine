@@ -44,6 +44,7 @@ class MdYamlMeta:
     suppress_pdf_flag: bool = False
     lang: str = ""
     relpath2r: str = ""
+    subpath: str = ""
     inc_style_list: Optional[list[str]] = None
     slide_format_list: Optional[list[str]] = None
     includes_list: Optional[list[str]] = None
@@ -190,9 +191,14 @@ def handle_file(c_o: 'mdmwrx.config.Config_Obj',
     # print("vermerke ", sourcefile.absolute(), time.time())
     c_o.lastconverted[sourcefile.absolute()] = time.time()
     
+    if c_o.website_url:
+        add2yaml = f'm²_canonical_link: "{c_o.website_url + mymeta.subpath + sourcefile.stem}.html"'
+    else:
+        add2yaml = ""
+    # print(f"add2yaml={add2yaml}")
     # Präprozessor erzeugt erst einmal wieder ein Markdown-File
     print("Präprozessor...")
-    do_pre_proc(sourcefile, tmp_preproc_file)
+    do_pre_proc(sourcefile, tmp_preproc_file, add2yaml=add2yaml)
     
     # Hier werden nun weitere Dateien angehängt. 
     # Enthalten ist ein kurzer Ausflug um ggf. direkt eine weitere
@@ -371,7 +377,7 @@ def get_meta_from_mdyaml(c_o: 'mdmwrx.config.Config_Obj', mdfile: Path) -> MdYam
 
     yaml_dict = get_yaml_dict_from_md(mdfile)  # existiert immer, aber ggf. leer, 
 
-    mymeta.relpath2r = relpath_2_root(mdfile.parent)
+    mymeta.relpath2r, mymeta.subpath = relpath_2_root(mdfile.parent)
     # print(f'Weg zu root: {relpath2r}')
 
     # print(yaml_dict)    # nur für debugging

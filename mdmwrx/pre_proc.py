@@ -24,6 +24,9 @@ import datetime
 from io import StringIO
 from hashlib import blake2b
 
+import typing
+import pathlib
+
 EASYPRINT_JAVA = \
     """
 void print(String value)    { System.out.print(value); }
@@ -70,19 +73,23 @@ MERMAID_LOADER = \
 #      Wenn diese nicht mehr verfügbar ist haben wir ein Problem...
 #  ##  Grund: die Versionen 11.10 - 10.12 (gerade aktuell) haben einen Bug beim Sandbox-Modus.
 
+YF_SEARCH = 2
+YF_FOUND = 1
+YF_FINISHED = 0  # Entweder ignorieren oder Suche und Änderung bereits beendet
 
-def preprocess(filein, fileout, remove_yaml=False):
+
+def preprocess(filein: typing.IO, fileout: typing.IO, remove_yaml: bool = False, add2yaml: str = "") -> None:
     global last_java_executes
     global last_java_executes_filled
     
-    exec_env = {}
+    exec_env: dict = {}
     code_marker = ''  # gefundene Backticks, mit denen der Codeblock eröffnet wurde. ''=nicht im Code
-    code_block = []   # nimmt zu verarbeitende Codezeilen
+    code_block: list[str] = []   # nimmt zu verarbeitende Codezeilen
     code_typ = ''     # nimmt derzeit Python, Java, HTML oder Markdown auf
     java_store = ''   # nimmt eventuellen Javacode, der gespeichert werden soll, auf
     return_lines = []
     output_lines = []
-    yaml_sep_count = 0
+    yaml_finder = YF_FINISHED  # state-machine: 0 mach nix oder yaml-Ende erkannt, 1 yaml-Anfang erkannt, 2 suche Anfang
     java_easyprint = True
     yaml_title = ""
     
@@ -97,31 +104,42 @@ def preprocess(filein, fileout, remove_yaml=False):
             return True
         return False
 
+    # print(f"add2yaml anzuwenden: {add2yaml}")
+    if remove_yaml or len(add2yaml) > 0:
+        yaml_finder = YF_SEARCH
+
     for line in filein:
         
-        # Schritt 1: ggf. YAML-Block am Anfange entfernen (für Verkettung von markdown-Dateien)
-        #            Dabei wird ggf. der title gemerkt und statt des yaml-Blocks als H1 ausgegeben.
-        if remove_yaml:
+        # Schritt 1: Entweder YAML-Block am Anfange entfernen (für Verkettung von markdown-Dateien)
+        #              Dabei wird ggf. der title gemerkt und statt des yaml-Blocks als H1 ausgegeben.
+        #            Oder YAML nur erkennen und am Ende ergänzen
+        if yaml_finder > YF_FINISHED:
             if line.startswith('---') or line.startswith('...'):
-                yaml_sep_count += 1
-            elif (not yaml_title) and line.startswith('title') and ":" in line:
-                yaml_title = line.split(":")[1].strip()
-                if len(yaml_title) > 2 and yaml_title[0] == yaml_title[-1]:
-                    if yaml_title.startswith('"') or yaml_title.startswith('"'):
-                        yaml_title = yaml_title[1:-1]
-                
-            if yaml_sep_count == 2:
-                remove_yaml = False   # job erfüllt
-                if len(yaml_title) > 0:
-                    line = f"\n# {yaml_title}\n"  # Zeilenumbrüche gegen Überraschungen
+                yaml_finder -= 1
+                # print(f'yaml_finder: {yaml_finder}')
+            
+            if remove_yaml:
+                if yaml_finder == YF_FOUND and (not yaml_title) and line.startswith('title') and ":" in line:
+                    yaml_title = line.split(":")[1].strip()
+                    if len(yaml_title) > 2 and yaml_title[0] == yaml_title[-1]:
+                        if yaml_title.startswith('"') or yaml_title.startswith('"'):
+                            yaml_title = yaml_title[1:-1]
+                    
+                if yaml_finder == YF_FINISHED:  # job erfüllt
+                    if len(yaml_title) > 0:
+                        line = f"\n# {yaml_title}\n"  # Zeilenumbrüche gegen Überraschungen
+                    else:
+                        line = ""
                 else:
                     line = ""
-            elif yaml_sep_count > 0:
-                line = ""
                 
+            if yaml_finder == YF_FINISHED and len(add2yaml) > 0:
+                line = add2yaml + "\n" + line
+                # print(f"add2yaml angewandt: {add2yaml}")
+
         # Schritt 2a:
         # Ein beginnender Code-Block wird ggf. erkannt und analysiert
-        if not code_marker and line.startswith("```"):
+        if line.startswith("```") and not code_marker:
             code_marker = "```"   
             while line.startswith(code_marker + "`"):
                 code_marker += "`"
@@ -262,7 +280,7 @@ def preprocess(filein, fileout, remove_yaml=False):
     # Ende des Preprocessings    
          
             
-def execute_java(thecode):
+def execute_java(thecode: str) -> str:
     global last_java_executes
     global last_java_executes_filled
     global last_java_executes_loaded
@@ -310,10 +328,10 @@ def execute_java(thecode):
     return output
 
 
-def do_pre_proc(file_in, file_out, remove_yaml=False):
+def do_pre_proc(file_in: pathlib.Path, file_out: pathlib.Path, remove_yaml: bool = False, add2yaml: str = "") -> None:
     with open(file_in, 'r') as fin:
         with open(file_out, 'w') as fout:
-            preprocess(fin, fout, remove_yaml)    
+            preprocess(fin, fout, remove_yaml, add2yaml)    
             
             
 if __name__ == "__main__":
